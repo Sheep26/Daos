@@ -1,1 +1,1 @@
-qemu-system-i386 -cdrom build/daos.iso
+qemu-system-i386 -cdrom build/daos.iso -m 128
