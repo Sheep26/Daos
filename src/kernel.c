@@ -1,4 +1,3 @@
-#include <stdint.h>
 #include "io.h"
 
 #define VGA_BUFFER 0xb8000
@@ -12,9 +11,9 @@ typedef struct {
 	uint16_t vga_y;
 	uint16_t vga_width;
 	uint16_t vga_height;
-} VGA;
+} vga_t;
 
-VGA vga = {0, 0, WIDTH, HEIGHT};
+vga_t vga = {0, 0, WIDTH, HEIGHT};
 
 void print(const char *str, uint8_t attrib) {
 	while (*str) {
@@ -93,6 +92,6 @@ char * itoa(int value, char* str, int base) {
     return rc;
 }
 
-void main() {
-	println("Woo", 0xF);
+void kernel_main(uint32_t magic, uint32_t multiboot_info) {
+    println("Woo", 0xF);
 }
