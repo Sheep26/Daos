@@ -20,3 +20,9 @@ static inline uint8_t inb(uint16_t port) {
 static inline void io_wait(void) {
     outb(0x80, 0);
 }
+
+uint8_t ps2_keyboard_input() {
+	while (!(inb(0x64) & 1));
+
+    return inb(0x60);
+}
