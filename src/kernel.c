@@ -49,6 +49,5 @@ void kernel_main() {
     serial_init();
     init_cpu();
 
-    serial_print(cpu.vendor);
-    serial_print("\n");
+    print(cpu.vendor, 0xF);
 }
