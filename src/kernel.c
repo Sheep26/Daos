@@ -1,5 +1,6 @@
-#include "io.h"
-#include "vga.h"
+#include "drivers/io.h"
+#include "drivers/vga.h"
+#include "drivers/system.h"
 
 char* itoa(int value, char* str, int base) {
     /* 
@@ -44,6 +45,10 @@ char* itoa(int value, char* str, int base) {
     return rc;
 }
 
-void kernel_main(uint32_t magic, uint32_t multiboot_info) {
-    println("Woo", 0xF);
+void kernel_main() {
+    serial_init();
+    init_cpu();
+
+    serial_print(cpu.vendor);
+    serial_print("\n");
 }
