@@ -1,1 +1,1 @@
-qemu-system-i386 -cdrom build/daos.iso -m 128 -serial stdio
+qemu-system-i386 -cdrom build/daos.iso -m 128 -serial stdio -drive file=disk.img,format=raw,if=ide,cache=none

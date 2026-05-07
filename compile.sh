@@ -11,6 +11,12 @@ for file in src/*.c; do
     i686-elf-gcc -c "$file" -o "build/$name.o" -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 done
 
+for file in src/drivers/*.c; do
+    name=$(basename "$file" .c)
+
+    i686-elf-gcc -c "$file" -o "build/$name.o" -std=gnu99 -ffreestanding -O2 -Wall -Wextra
+done
+
 i686-elf-gcc -T linker.ld -o build/daos -ffreestanding -O2 -nostdlib build/*.o -lgcc
 
 cp build/daos build/isodir/boot/daos

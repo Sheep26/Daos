@@ -2,6 +2,11 @@
 #include "drivers/vga.h"
 #include "drivers/system.h"
 
+volatile uint16_t *vga_buffer = (uint16_t*) VGA_BUFFER;
+
+cpu_t cpu;
+vga_t vga;
+
 char* itoa(int value, char* str, int base) {
     /* 
     @param int value - The value of the int.
@@ -46,8 +51,10 @@ char* itoa(int value, char* str, int base) {
 }
 
 void kernel_main() {
-    serial_init();
-    init_cpu();
+    vga = (vga_t) {0, 0, WIDTH, HEIGHT, vga_buffer};
 
-    print(cpu.vendor, 0xF);
+    serial_init();
+    init_cpu(&cpu);
+
+    print(cpu.vendor, 0xF, &vga);
 }
