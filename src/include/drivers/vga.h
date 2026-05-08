@@ -5,6 +5,8 @@
 #define HEIGHT 25
 
 #include <stdint.h>
+#include <multiboot.h>
+#include <itoa.h>
 
 enum video_type {
 	VIDEO_TYPE_NONE = 0x00,
@@ -20,11 +22,21 @@ typedef struct {
 	volatile uint16_t *vga_buffer;
 } tty_t;
 
+typedef struct {
+    multiboot_info_t* mbi;
+
+	uint32_t* framebuffer;
+	uint32_t pitch;
+} vga_t;
+
 void print(const char *str, uint8_t attrib, tty_t *vga);
 void clearln(uint8_t ln, tty_t *vga);
 void scroll(tty_t *vga);
 void println(const char *str, uint8_t attrib, tty_t *vga);
 
-void putpixel(int x, int y, uint32_t color, uint32_t *framebuffer, uint32_t pitch);
+void setup_vga(multiboot_info_t* mbi);
+
+void putpixel(int x, int y, uint32_t colour);
+void fillscreen(uint32_t colour);
 
 #endif

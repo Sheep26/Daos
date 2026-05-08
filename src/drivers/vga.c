@@ -1,4 +1,7 @@
 #include <drivers/vga.h>
+#include <drivers/io.h>
+
+vga_t vga;
 
 void print(const char *str, uint8_t attrib, tty_t *tty) {
 	while (*str) {
@@ -39,8 +42,59 @@ void println(const char *str, uint8_t attrib, tty_t *tty) {
 	}
 }
 
-void putpixel(int x, int y, uint32_t color, uint32_t *framebuffer, uint32_t pitch) {
-    uint32_t pitch_pixels = pitch / 4;
+void setup_vga(multiboot_info_t* mbi) {
+	serial_print("Setting up VGA\n");
+	serial_print("Checking framebuffer availability\n");
 
-    framebuffer[y * pitch_pixels + x] = color;
+    // Check framebuffer available.
+    if (!(mbi->flags & (1 << 12))) {
+        serial_print("ERROR: Framebuffer not available\n");
+        while (1);
+    }
+
+    serial_print("Framebuffer is available\n");
+
+    char buf[32];
+
+    serial_print("VGA Width: ");
+    itoa(mbi->framebuffer_width, buf, 10);
+    serial_print(buf);
+    serial_print("\n");
+
+    serial_print("VGA Height: ");
+    itoa(mbi->framebuffer_height, buf, 10);
+    serial_print(buf);
+    serial_print("\n");
+
+    serial_print("VGA Pitch: ");
+    itoa(mbi->framebuffer_pitch, buf, 10);
+    serial_print(buf);
+    serial_print("\n");
+
+    serial_print("VGA BPP: ");
+    itoa(mbi->framebuffer_bpp, buf, 10);
+    serial_print(buf);
+    serial_print("\n");
+
+    serial_print("VGA TYPE: ");
+    itoa(mbi->framebuffer_type, buf, 10);
+    serial_print(buf);
+    serial_print("\n");
+
+	vga = (vga_t) {mbi, (uint32_t*)(uintptr_t) mbi->framebuffer_addr, mbi->framebuffer_pitch};
+	serial_print("VGA setup complete\n");
+}
+
+void putpixel(int x, int y, uint32_t colour) {
+    uint32_t pitch_pixels = vga.pitch / 4;
+
+    vga.framebuffer[y * pitch_pixels + x] = colour;
+}
+
+void fillscreen(uint32_t colour) {
+	for (uint32_t y = 0; y < vga.mbi->framebuffer_height; y++) {
+        for (uint32_t x = 0; x < vga.mbi->framebuffer_width; x++) {
+            putpixel(x, y, colour);
+        }
+    }
 }
