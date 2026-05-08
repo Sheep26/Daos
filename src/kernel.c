@@ -62,6 +62,11 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     serial_init();
+    init_cpu(&cpu);
+
+    serial_print("CPU Vendor: ");
+    serial_print(cpu.vendor);
+    serial_print("\n");
 
     tty = (tty_t) {0, 0, WIDTH, HEIGHT, (uint16_t*) VGA_BUFFER};
     mbi = (multiboot_info_t*) addr;
@@ -111,6 +116,4 @@ void kernel_main(uint32_t magic, uint32_t addr) {
             putpixel(x, y, 0x00FF0000, framebuffer, pitch);
         }
     }
-
-    init_cpu(&cpu);
 }
