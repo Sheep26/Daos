@@ -1,4 +1,3 @@
-#include <drivers/io.h>
 #include <drivers/vga.h>
 #include <drivers/system.h>
 #include <multiboot.h>
@@ -26,5 +25,5 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     mbi = (multiboot_info_t*) addr;
 
     setup_vga(mbi);
-    fillscreen(0x00FF0000);
+    fillrect(100, 100, 200, 200, 0x00FF0000);
 }

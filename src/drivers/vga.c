@@ -3,7 +3,7 @@
 
 vga_t vga;
 
-void print(const char *str, uint8_t attrib, tty_t *tty) {
+void print_tty(const char *str, uint8_t attrib, tty_t *tty) {
 	while (*str) {
 		uint16_t vga_pos = tty->tty_y * tty->tty_width + tty->tty_x;
 		tty->vga_buffer[vga_pos] = (attrib << 8) | *str++;
@@ -17,27 +17,27 @@ void print(const char *str, uint8_t attrib, tty_t *tty) {
 	}
 }
 
-void clearln(uint8_t ln, tty_t *tty) {
+void clearln_tty(uint8_t ln, tty_t *tty) {
 	for (uint8_t x = 0; x < tty->tty_width; x++)
 		tty->vga_buffer[ln * tty->tty_width + x] = (0x00 << 8) | ' ';
 }
 
-void scroll(tty_t *tty) {
+void scroll_tty(tty_t *tty) {
 	for (uint8_t y = 0; y < tty->tty_height - 1; y++)
 		for (uint8_t x = 0; x < tty->tty_width; x++)
 			tty->vga_buffer[y * tty->tty_width + x] =
 				tty->vga_buffer[(y + 1) * tty->tty_width + x];
 }
 
-void println(const char *str, uint8_t attrib, tty_t *tty) {
-	print(str, attrib, tty);
+void println_tty(const char *str, uint8_t attrib, tty_t *tty) {
+	print_tty(str, attrib, tty);
 
 	tty->tty_x = 0;
 	tty->tty_y++;
 
 	if (tty->tty_y >= tty->tty_height) {
-		scroll(tty);
-		clearln(tty->tty_height - 1, tty);
+		scroll_tty(tty);
+		clearln_tty(tty->tty_height - 1, tty);
 		tty->tty_y = tty->tty_height - 1;
 	}
 }
@@ -92,9 +92,17 @@ void putpixel(int x, int y, uint32_t colour) {
 }
 
 void fillscreen(uint32_t colour) {
-	for (uint32_t y = 0; y < vga.mbi->framebuffer_height; y++) {
-        for (uint32_t x = 0; x < vga.mbi->framebuffer_width; x++) {
+	for (uint32_t y = 0; y < vga.mbi->framebuffer_height; y++)
+        for (uint32_t x = 0; x < vga.mbi->framebuffer_width; x++)
             putpixel(x, y, colour);
-        }
-    }
+}
+
+void fillrect(int x, int y, int width, int height, uint32_t colour) {
+	for (int i = 0; i < width; i++)
+		for (int z = 0; z < height; z++)
+			putpixel(x + i, y + z, colour);
+}
+
+void flush_vga() {
+
 }

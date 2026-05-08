@@ -29,14 +29,16 @@ typedef struct {
 	uint32_t pitch;
 } vga_t;
 
-void print(const char *str, uint8_t attrib, tty_t *vga);
-void clearln(uint8_t ln, tty_t *vga);
-void scroll(tty_t *vga);
-void println(const char *str, uint8_t attrib, tty_t *vga);
+void print_tty(const char *str, uint8_t attrib, tty_t *vga);
+void clearln_tty(uint8_t ln, tty_t *vga);
+void scroll_tty(tty_t *vga);
+void println_tty(const char *str, uint8_t attrib, tty_t *vga);
 
 void setup_vga(multiboot_info_t* mbi);
 
 void putpixel(int x, int y, uint32_t colour);
 void fillscreen(uint32_t colour);
+void fillrect(int x, int y, int width, int height, uint32_t colour);
+void flush_vga();
 
 #endif
