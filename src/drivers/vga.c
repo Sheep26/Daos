@@ -1,40 +1,46 @@
-#include "vga.h"
+#include <drivers/vga.h>
 
-void print(const char *str, uint8_t attrib, vga_t *vga) {
+void print(const char *str, uint8_t attrib, tty_t *tty) {
 	while (*str) {
-		uint16_t vga_pos = vga->vga_y * vga->vga_width + vga->vga_x;
-		vga->vga_buffer[vga_pos] = (attrib << 8) | *str++;
+		uint16_t vga_pos = tty->tty_y * tty->tty_width + tty->tty_x;
+		tty->vga_buffer[vga_pos] = (attrib << 8) | *str++;
 
-		vga->vga_x++;
+		tty->tty_x++;
 
-		if (vga->vga_x >= vga->vga_width) {
-			vga->vga_x = 0;
-			vga->vga_y ++;
+		if (tty->tty_x >= tty->tty_width) {
+			tty->tty_x = 0;
+			tty->tty_y ++;
 		}
 	}
 }
 
-void clearln(uint8_t ln, vga_t *vga) {
-	for (uint8_t x = 0; x < vga->vga_width; x++)
-		vga->vga_buffer[ln * vga->vga_width + x] = (0x00 << 8) | ' ';
+void clearln(uint8_t ln, tty_t *tty) {
+	for (uint8_t x = 0; x < tty->tty_width; x++)
+		tty->vga_buffer[ln * tty->tty_width + x] = (0x00 << 8) | ' ';
 }
 
-void scroll(vga_t *vga) {
-	for (uint8_t y = 0; y < vga->vga_height - 1; y++)
-		for (uint8_t x = 0; x < vga->vga_width; x++)
-			vga->vga_buffer[y * vga->vga_width + x] =
-				vga->vga_buffer[(y + 1) * vga->vga_width + x];
+void scroll(tty_t *tty) {
+	for (uint8_t y = 0; y < tty->tty_height - 1; y++)
+		for (uint8_t x = 0; x < tty->tty_width; x++)
+			tty->vga_buffer[y * tty->tty_width + x] =
+				tty->vga_buffer[(y + 1) * tty->tty_width + x];
 }
 
-void println(const char *str, uint8_t attrib, vga_t *vga) {
-	print(str, attrib, vga);
+void println(const char *str, uint8_t attrib, tty_t *tty) {
+	print(str, attrib, tty);
 
-	vga->vga_x = 0;
-	vga->vga_y++;
+	tty->tty_x = 0;
+	tty->tty_y++;
 
-	if (vga->vga_y >= vga->vga_height) {
-		scroll(vga);
-		clearln(vga->vga_height - 1, vga);
-		vga->vga_y = vga->vga_height - 1;
+	if (tty->tty_y >= tty->tty_height) {
+		scroll(tty);
+		clearln(tty->tty_height - 1, tty);
+		tty->tty_y = tty->tty_height - 1;
 	}
+}
+
+void putpixel(int x, int y, uint32_t color, uint32_t *framebuffer, uint32_t pitch) {
+    uint32_t pitch_pixels = pitch / 4;
+
+    framebuffer[y * pitch_pixels + x] = color;
 }

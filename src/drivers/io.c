@@ -1,4 +1,4 @@
-#include "io.h"
+#include <drivers/io.h>
 
 uint8_t ps2_keyboard_input() {
 	while (!(inb(0x64) & 1));
