@@ -81,19 +81,26 @@ void setup_vga(multiboot_info_t* mbi) {
     serial_print(buf);
     serial_print("\n");
 
-	vga = (vga_t) {mbi, (uint32_t*)(uintptr_t) mbi->framebuffer_addr, mbi->framebuffer_pitch};
+	vga.framebuffer_addr = mbi->framebuffer_addr;
+	vga.framebuffer_pitch = mbi->framebuffer_pitch;
+	vga.framebuffer = (uint32_t*)(uintptr_t) mbi->framebuffer_addr;
+	vga.framebuffer_width = mbi->framebuffer_width;
+	vga.framebuffer_height = mbi->framebuffer_height;
+	vga.framebuffer_bpp = mbi->framebuffer_bpp;
+	vga.framebuffer_type = mbi->framebuffer_type;
+
 	serial_print("VGA setup complete\n");
 }
 
 void putpixel(int x, int y, uint32_t colour) {
-    uint32_t pitch_pixels = vga.pitch / 4;
+    uint32_t pitch_pixels = vga.framebuffer_pitch / 4;
 
     vga.framebuffer[y * pitch_pixels + x] = colour;
 }
 
 void fillscreen(uint32_t colour) {
-	for (uint32_t y = 0; y < vga.mbi->framebuffer_height; y++)
-        for (uint32_t x = 0; x < vga.mbi->framebuffer_width; x++)
+	for (uint32_t y = 0; y < vga.framebuffer_height; y++)
+        for (uint32_t x = 0; x < vga.framebuffer_width; x++)
             putpixel(x, y, colour);
 }
 

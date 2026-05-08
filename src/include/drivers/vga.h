@@ -23,10 +23,13 @@ typedef struct {
 } tty_t;
 
 typedef struct {
-    multiboot_info_t* mbi;
-
+	uint64_t framebuffer_addr;
+	uint32_t framebuffer_pitch;
+	uint32_t framebuffer_width;
+	uint32_t framebuffer_height;
+	uint32_t framebuffer_bpp;
+	uint32_t framebuffer_type;
 	uint32_t* framebuffer;
-	uint32_t pitch;
 } vga_t;
 
 void print_tty(const char *str, uint8_t attrib, tty_t *vga);

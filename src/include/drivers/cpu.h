@@ -1,5 +1,5 @@
-#ifndef SYSTEM_H
-#define SYSTEM_H
+#ifndef CPU_H
+#define CPU_H
 
 #include <stdint.h>
 #include <cpuid.h>

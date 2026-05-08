@@ -1,4 +1,4 @@
-#include <drivers/system.h>
+#include <drivers/cpu.h>
 
 void get_cpu_frequency_info(cpu_t *cpu) {
     uint32_t eax, ebx, ecx, edx;
