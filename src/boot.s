@@ -1,27 +1,41 @@
-/* Declare constants for the multiboot header. */
-.set ALIGN,    1<<0             /* align loaded modules on page boundaries */
-.set MEMINFO,  1<<1             /* provide memory map */
-.set VIDEO,    1<<2				/* gib video info */
-.set FLAGS,    ALIGN | MEMINFO | VIDEO  /* this is the Multiboot 'flag' field */
-.set MAGIC,    0x1BADB002       /* 'magic number' lets bootloader find the header */
-.set CHECKSUM, -(MAGIC + FLAGS) /* checksum of above, to prove we are multiboot */
+/* =========================
+   Multiboot2 Header
+   ========================= */
+
+.set ALIGN,    1<<0
+.set MEMINFO,  1<<1
+.set VIDEO,    1<<2
+
+.set FLAGS,    ALIGN | MEMINFO | VIDEO
+.set MAGIC,    0xE85250D6
+.set ARCH,     0
 
 .section .multiboot
-.align 4
+.align 8
+
 .long MAGIC
-.long FLAGS
-.long CHECKSUM
+.long ARCH
+.long header_end - header_start
+.long -(MAGIC + ARCH + (header_end - header_start))
 
-.long 0            # header_addr
-.long 0            # load_addr
-.long 0            # load_end_addr
-.long 0            # bss_end_addr
-.long 0            # entry_addr
+header_start:
 
-.long 0            # mode_type
-.long 640          # width
-.long 480          # height
-.long 32           # depth
+/* --- Tag: framebuffer request --- */
+.align 8
+.short 5              /* MULTIBOOT_TAG_TYPE_FRAMEBUFFER_REQUEST */
+.short 0              /* flags */
+.long 20              /* size */
+.long 640             /* width */
+.long 480             /* height */
+.long 32              /* depth */
+
+/* --- End tag (required) --- */
+.align 8
+.short 0              /* type = end */
+.short 0              /* flags */
+.long 8               /* size */
+
+header_end:
 
 .section .bss
 .align 16

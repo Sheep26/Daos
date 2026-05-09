@@ -42,58 +42,55 @@ void println_tty(const char *str, uint8_t attrib, tty_t *tty) {
 	}
 }
 
-void setup_vga(multiboot_info_t* mbi) {
+void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
 	serial_print("Setting up VGA\n");
-	serial_print("Checking framebuffer availability\n");
-
-    // Check framebuffer available.
-    if (!(mbi->flags & (1 << 12))) {
-        serial_print("ERROR: Framebuffer not available\n");
-        while (1);
-    }
-
-    serial_print("Framebuffer is available\n");
 
     char buf[32];
 
     serial_print("VGA Width: ");
-    itoa(mbi->framebuffer_width, buf, 10);
+    itoa(fb_tag->framebuffer_width, buf, 10);
     serial_print(buf);
     serial_print("\n");
 
     serial_print("VGA Height: ");
-    itoa(mbi->framebuffer_height, buf, 10);
+    itoa(fb_tag->framebuffer_height, buf, 10);
     serial_print(buf);
     serial_print("\n");
 
     serial_print("VGA Pitch: ");
-    itoa(mbi->framebuffer_pitch, buf, 10);
+    itoa(fb_tag->framebuffer_pitch, buf, 10);
     serial_print(buf);
     serial_print("\n");
 
     serial_print("VGA BPP: ");
-    itoa(mbi->framebuffer_bpp, buf, 10);
+    itoa(fb_tag->framebuffer_bpp, buf, 10);
     serial_print(buf);
     serial_print("\n");
 
     serial_print("VGA TYPE: ");
-    itoa(mbi->framebuffer_type, buf, 10);
+    itoa(fb_tag->framebuffer_type, buf, 10);
     serial_print(buf);
     serial_print("\n");
 
-	vga.framebuffer_addr = mbi->framebuffer_addr;
-	vga.framebuffer_pitch = mbi->framebuffer_pitch;
-	vga.framebuffer = (uint32_t*)(uintptr_t) mbi->framebuffer_addr;
-	vga.framebuffer_width = mbi->framebuffer_width;
-	vga.framebuffer_height = mbi->framebuffer_height;
-	vga.framebuffer_bpp = mbi->framebuffer_bpp;
-	vga.framebuffer_type = mbi->framebuffer_type;
+	vga.framebuffer_addr = fb_tag->framebuffer_addr;
+	vga.framebuffer = (uint32_t*) fb_tag->framebuffer_addr;
+	vga.framebuffer_pitch = fb_tag->framebuffer_pitch;
+	vga.framebuffer_width = fb_tag->framebuffer_width;
+	vga.framebuffer_height = fb_tag->framebuffer_height;
+	vga.framebuffer_bpp = fb_tag->framebuffer_bpp;
+	vga.framebuffer_type = fb_tag->framebuffer_type;
 
 	serial_print("VGA setup complete\n");
 }
 
 void putpixel(int x, int y, uint32_t colour) {
-    uint32_t pitch_pixels = vga.framebuffer_pitch / 4;
+    uint32_t bpp = vga.framebuffer_bpp / 8;
+    uint32_t pitch_pixels = vga.framebuffer_pitch / bpp;
+
+    if (x < 0 || y < 0 ||
+        x >= (int) vga.framebuffer_width ||
+        y >= (int) vga.framebuffer_height)
+        return;
 
     vga.framebuffer[y * pitch_pixels + x] = colour;
 }
@@ -110,6 +107,6 @@ void fillrect(int x, int y, int width, int height, uint32_t colour) {
 			putpixel(x + i, y + z, colour);
 }
 
-void flush_vga() {
-
+void flush_buffer() {
+    
 }

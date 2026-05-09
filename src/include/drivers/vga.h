@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <multiboot.h>
-#include <itoa.h>
+#include <utils/itoa.h>
 
 enum video_type {
 	VIDEO_TYPE_NONE = 0x00,
@@ -37,11 +37,11 @@ void clearln_tty(uint8_t ln, tty_t *vga);
 void scroll_tty(tty_t *vga);
 void println_tty(const char *str, uint8_t attrib, tty_t *vga);
 
-void setup_vga(multiboot_info_t* mbi);
+void setup_vga(multiboot_tag_framebuffer_t* fb_tag);
 
 void putpixel(int x, int y, uint32_t colour);
 void fillscreen(uint32_t colour);
 void fillrect(int x, int y, int width, int height, uint32_t colour);
-void flush_vga();
+void flush_buffer();
 
 #endif
