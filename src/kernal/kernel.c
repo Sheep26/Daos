@@ -1,6 +1,7 @@
 #include <drivers/vga.h>
 #include <drivers/cpu.h>
 #include <multiboot.h>
+#include <utils/itoa.h>
 
 #define VGA_BUFFER 0xb8000
 
@@ -22,6 +23,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     ptr += 8; // skip total_size + reserved
 
     multiboot_tag_framebuffer_t* fb_tag;
+    uint64_t total_usable_ram = 0;
 
     while (ptr < (uint8_t*)addr + total_size) {
         multiboot_tag_t* tag = (multiboot_tag_t*) ptr;
@@ -39,6 +41,8 @@ void kernel_main(uint32_t magic, uint32_t addr) {
             for (int i = 0; i < entries; i++) {
                 if (entry[i].type == 1) {
                     // usable RAM
+                    total_usable_ram += entry[i].len;
+
                     // entry[i].addr -> start
                     // entry[i].len  -> size
                 }
@@ -52,6 +56,13 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     serial_print("Setup multiboot\n");
+
+    char buf[32];
+    itoa(total_usable_ram / (1024 * 1024), buf, 10);
+    serial_print("Usable RAM: ");
+    serial_print(buf);
+    serial_print("MB");
+    serial_print("\n");
 
     init_cpu(&cpu);
 
