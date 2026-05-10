@@ -3,23 +3,15 @@
 #include <multiboot.h>
 #include <utils/itoa.h>
 #include <video.h>
+#include <string.h>
 
 #define VGA_BUFFER 0xb8000
 
 cpu_t cpu;
 tty_t tty;
 
-static int kstrcmp(const char* a, const char* b) {
-    while (*a && *b) {
-        if (*a != *b) return *a - *b;
-        a++;
-        b++;
-    }
-    return *a - *b;
-}
-
 void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
-    if (kstrcmp(mod->cmdline, name) == 0) {
+    if (strcmp(mod->cmdline, name) == 0) {
         if (out_size) *out_size = mod->mod_end - mod->mod_start;
         return (void*) mod->mod_start;
     }
