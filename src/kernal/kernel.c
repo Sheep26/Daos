@@ -22,7 +22,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     uint32_t total_size = *(uint32_t*) ptr;
     ptr += 8; // skip total_size + reserved
 
-    multiboot_tag_framebuffer_t* fb_tag;
+    multiboot_tag_framebuffer_t* fb_tag = 0;
     uint64_t total_usable_ram = 0;
 
     while (ptr < (uint8_t*)addr + total_size) {
@@ -55,6 +55,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         ptr += ((tag->size + 7) & ~7); // align to 8 bytes
     }
 
+    if (!fb_tag) {
+        serial_print("ERROR: Framebuffer uninitalized");
+
+        while (1);
+    }
+
     serial_print("Setup multiboot\n");
 
     char buf[32];
@@ -74,4 +80,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     fillscreen(0x0000FF00);
     fillrect(100, 100, 200, 200, 0x00FF0000);
+
+    flush_buffer();
 }

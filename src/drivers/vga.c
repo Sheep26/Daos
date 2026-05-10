@@ -1,5 +1,6 @@
 #include <drivers/vga.h>
 #include <drivers/io.h>
+#include <memory/kmalloc.h>
 
 vga_t vga;
 
@@ -80,6 +81,9 @@ void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
 	vga.framebuffer_bpp = fb_tag->framebuffer_bpp;
 	vga.framebuffer_type = fb_tag->framebuffer_type;
 
+	uint32_t *backbuffer = kmalloc_b(vga.framebuffer_height * vga.framebuffer_pitch);
+	vga.backbuffer = backbuffer;
+
 	serial_print("VGA setup complete\n");
 }
 
@@ -92,7 +96,7 @@ void putpixel(int x, int y, uint32_t colour) {
         y >= (int) vga.framebuffer_height)
         return;
 
-    vga.framebuffer[y * pitch_pixels + x] = colour;
+    vga.backbuffer[y * pitch_pixels + x] = colour;
 }
 
 void fillscreen(uint32_t colour) {
@@ -108,5 +112,6 @@ void fillrect(int x, int y, int width, int height, uint32_t colour) {
 }
 
 void flush_buffer() {
-    
+    for (uint32_t pixel = 0; pixel <= vga.framebuffer_height * vga.framebuffer_pitch; pixel++)
+		vga.framebuffer[pixel] = vga.backbuffer[pixel];
 }

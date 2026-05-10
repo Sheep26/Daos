@@ -29,7 +29,8 @@ typedef struct {
 	uint32_t framebuffer_height;
 	uint32_t framebuffer_bpp;
 	uint32_t framebuffer_type;
-	uint32_t* framebuffer;
+	uint32_t *framebuffer;
+	uint32_t *backbuffer;
 } vga_t;
 
 void print_tty(const char *str, uint8_t attrib, tty_t *vga);
