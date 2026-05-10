@@ -2,11 +2,30 @@
 #include <drivers/cpu.h>
 #include <multiboot.h>
 #include <utils/itoa.h>
+#include <video.h>
 
 #define VGA_BUFFER 0xb8000
 
 cpu_t cpu;
 tty_t tty;
+
+static int kstrcmp(const char* a, const char* b) {
+    while (*a && *b) {
+        if (*a != *b) return *a - *b;
+        a++;
+        b++;
+    }
+    return *a - *b;
+}
+
+void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
+    if (kstrcmp(mod->cmdline, name) == 0) {
+        if (out_size) *out_size = mod->mod_end - mod->mod_start;
+        return (void*) mod->mod_start;
+    }
+
+    return 0;
+}
 
 void kernel_main(uint32_t magic, uint32_t addr) {
     if (magic != 0x36d76289) {
@@ -25,10 +44,19 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     multiboot_tag_framebuffer_t* fb_tag = 0;
     uint64_t total_usable_ram = 0;
 
+    uint32_t video_size = 0;
+    uint8_t* video_data = 0;
+
     while (ptr < (uint8_t*)addr + total_size) {
         multiboot_tag_t* tag = (multiboot_tag_t*) ptr;
 
         if (tag->type == 0) break;
+
+        if (tag->type == MULTIBOOT_MODULE_TAG) {
+            multiboot_tag_module_t* mod = (multiboot_tag_module_t*) tag;
+
+            video_data = find_module(mod, "video", &video_size);
+        }
 
         if (tag->type == MULTIBOOT_MMAP_TAG) {
             multiboot_tag_mmap_t* mmap_tag = (multiboot_tag_mmap_t*) tag;
@@ -78,8 +106,32 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
-    fillscreen(0x0000FF00);
-    fillrect(100, 100, 200, 200, 0x00FF0000);
+    const uint32_t frame_width = video_width;
+    const uint32_t frame_height = video_height;
 
-    flush_buffer();
+    const uint32_t bytes_per_row = (frame_width + 7) / 8;
+    const uint32_t bytes_per_frame = bytes_per_row * frame_height;
+
+    uint32_t num_frames = video_size / bytes_per_frame;
+
+    for (uint32_t frame = 0; frame < num_frames; frame++) {
+        fillscreen(0x00000000);
+
+        for (uint32_t y = 0; y < frame_height; y++) {
+            for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
+                uint8_t row_byte = video_data[frame * bytes_per_frame + y * bytes_per_row + byte];
+
+                for (uint32_t bit = 0; bit < 8; bit++) {
+                    uint32_t x = byte * 8 + bit;
+                    if (x >= frame_width) break; // last byte might have padding bits
+
+                    uint8_t pixel = (row_byte >> (7 - bit)) & 1;
+
+                    putpixel(x, y, pixel ? 0x00FFFFFF : 0x00000000);
+                }
+            }
+        }
+
+        flush_buffer();
+    }
 }

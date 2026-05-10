@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 
+#define MULTIBOOT_MODULE_TAG 3
 #define MULTIBOOT_MMAP_TAG 6
 #define MULTIBOOT_FRAMEBUFFER_TAG 8
 
@@ -10,6 +11,14 @@ typedef struct multiboot_tag {
     uint32_t type;
     uint32_t size;
 } multiboot_tag_t;
+
+typedef struct multiboot_tag_module {
+    uint32_t type;
+    uint32_t size;
+    uint32_t mod_start;
+    uint32_t mod_end;
+    char cmdline[];
+} multiboot_tag_module_t;
 
 typedef struct multiboot_tag_framebuffer {
     uint32_t type;
