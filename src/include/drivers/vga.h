@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <multiboot.h>
 #include <utils/itoa.h>
+#include <drivers/io.h>
+#include <memory/liballoc/liballoc.h>
 
 enum video_type {
 	VIDEO_TYPE_NONE = 0x00,

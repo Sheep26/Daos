@@ -1,7 +1,3 @@
-/* =========================
-   Multiboot2 Header
-   ========================= */
-
 .set ALIGN,    1<<0
 .set MEMINFO,  1<<1
 .set VIDEO,    1<<2

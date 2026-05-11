@@ -2,13 +2,10 @@
 #include <drivers/cpu.h>
 #include <multiboot.h>
 #include <utils/itoa.h>
-#include <video.h>
 #include <string.h>
-
-#define VGA_BUFFER 0xb8000
+#include <memory/pmm.h>
 
 cpu_t cpu;
-tty_t tty;
 
 void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
     if (strcmp(mod->cmdline, name) == 0) {
@@ -34,10 +31,14 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     ptr += 8; // skip total_size + reserved
 
     multiboot_tag_framebuffer_t* fb_tag = 0;
-    uint64_t total_usable_ram = 0;
 
-    uint32_t video_size = 0;
-    uint8_t* video_data = 0;
+    uint32_t max_addr = 0;
+
+    multiboot_tag_mmap_t* mmap_tag;
+    multiboot_mmap_entry_t* mmap_entries;
+    int mmap_entry_count = 0;
+
+    uint64_t total_usable_ram = 0;
 
     while (ptr < (uint8_t*)addr + total_size) {
         multiboot_tag_t* tag = (multiboot_tag_t*) ptr;
@@ -45,23 +46,24 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         if (tag->type == 0) break;
 
         if (tag->type == MULTIBOOT_MODULE_TAG) {
-            multiboot_tag_module_t* mod = (multiboot_tag_module_t*) tag;
-
-            video_data = find_module(mod, "video", &video_size);
+            // multiboot_tag_module_t* mod = (multiboot_tag_module_t*) tag;
         }
 
         if (tag->type == MULTIBOOT_MMAP_TAG) {
-            multiboot_tag_mmap_t* mmap_tag = (multiboot_tag_mmap_t*) tag;
+            mmap_tag = (multiboot_tag_mmap_t*) tag;
 
-            multiboot_mmap_entry_t* entry =
-                (multiboot_mmap_entry_t*)(ptr + sizeof(multiboot_tag_mmap_t));
+            mmap_entries = (multiboot_mmap_entry_t*) (ptr + sizeof(multiboot_tag_mmap_t));
 
-            int entries = (mmap_tag->size - sizeof(multiboot_tag_mmap_t)) / mmap_tag->entry_size;
+            mmap_entry_count = (mmap_tag->size - sizeof(multiboot_tag_mmap_t)) / mmap_tag->entry_size;
 
-            for (int i = 0; i < entries; i++) {
-                if (entry[i].type == 1) {
+            for (int i = 0; i < mmap_entry_count; i++) {
+                if (mmap_entries[i].type == 1) {
                     // usable RAM
-                    total_usable_ram += entry[i].len;
+                    total_usable_ram += mmap_entries[i].len;
+                    uint32_t end = mmap_entries[i].addr + mmap_entries[i].len;
+
+                    if (end > max_addr)
+                        max_addr = end;
 
                     // entry[i].addr -> start
                     // entry[i].len  -> size
@@ -90,6 +92,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_print("MB");
     serial_print("\n");
 
+    pmm_init(mmap_entries, max_addr, mmap_entry_count);
+    heap_init();
+
     init_cpu(&cpu);
 
     serial_print("CPU Vendor: ");
@@ -98,32 +103,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
-    const uint32_t frame_width = video_width;
-    const uint32_t frame_height = video_height;
-
-    const uint32_t bytes_per_row = (frame_width + 7) / 8;
-    const uint32_t bytes_per_frame = bytes_per_row * frame_height;
-
-    uint32_t num_frames = video_size / bytes_per_frame;
-
-    for (uint32_t frame = 0; frame < num_frames; frame++) {
-        fillscreen(0x00000000);
-
-        for (uint32_t y = 0; y < frame_height; y++) {
-            for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
-                uint8_t row_byte = video_data[frame * bytes_per_frame + y * bytes_per_row + byte];
-
-                for (uint32_t bit = 0; bit < 8; bit++) {
-                    uint32_t x = byte * 8 + bit;
-                    if (x >= frame_width) break; // last byte might have padding bits
-
-                    uint8_t pixel = (row_byte >> (7 - bit)) & 1;
-
-                    putpixel(x, y, pixel ? 0x00FFFFFF : 0x00000000);
-                }
-            }
-        }
-
-        flush_buffer();
-    }
+    fillscreen(0x0000FF00);
+    flush_buffer();
 }

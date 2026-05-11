@@ -3,7 +3,7 @@ import numpy as np
 
 video_file = "input.mp4"
 output_file = "video.bin"
-resize_width, resize_height = 400, 400
+resize_width, resize_height = 640, 480
 
 cap = cv2.VideoCapture(video_file)
 frames = []
