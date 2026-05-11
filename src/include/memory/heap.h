@@ -5,6 +5,6 @@
 #include <stdint.h>
 #include <memory/pmm.h>
 
-void heap_init();
+void heap_init(uint32_t kernel_end);
 
 #endif

@@ -4,8 +4,12 @@
 #include <utils/itoa.h>
 #include <string.h>
 #include <memory/pmm.h>
+#include <stdint.h>
 
 cpu_t cpu;
+
+extern uint32_t _kernel_start;
+extern uint32_t _kernel_end;
 
 void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
     if (strcmp(mod->cmdline, name) == 0) {
@@ -92,8 +96,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_print("MB");
     serial_print("\n");
 
-    pmm_init(mmap_entries, max_addr, mmap_entry_count);
-    heap_init();
+    pmm_init(mmap_entries, max_addr, mmap_entry_count, &_kernel_end);
+    pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
+    heap_init(&_kernel_end);
 
     init_cpu(&cpu);
 

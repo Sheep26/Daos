@@ -17,7 +17,7 @@ static int pmm_bitmap_test(uint64_t bit) {
     return (pmm_bitmap[bit / 8] & (1 << (bit % 8))) != 0;
 }
 
-void pmm_init(multiboot_mmap_entry_t* mmap_entries, uint32_t max_addr, uint32_t mmap_entry_count) {
+void pmm_init(multiboot_mmap_entry_t* mmap_entries, uint32_t max_addr, uint32_t mmap_entry_count, uint32_t kernal_end) {
     pmm_total_pages = max_addr / PAGE_SIZE;
     pmm_bitmap_size = pmm_total_pages / 8;
 
@@ -26,7 +26,7 @@ void pmm_init(multiboot_mmap_entry_t* mmap_entries, uint32_t max_addr, uint32_t 
     // Loop to find usable areas and place bitmap at the start.
     for (uint32_t i = 0; i < mmap_entry_count; i++) {
         if (mmap_entries[i].type == 1 && mmap_entries[i].len >= pmm_bitmap_size) {
-            pmm_bitmap = (uint8_t*) (mmap_entries[i].addr + HHDM_OFFSET);
+            pmm_bitmap = (uint8_t*) (mmap_entries[i].addr + kernal_end);
 
             for (uint32_t j = 0; j < pmm_bitmap_size; j++)
                 pmm_bitmap[j] = 0xFF;
@@ -95,4 +95,17 @@ void pmm_free_pages(void* ptr, size_t pages) {
         pmm_bitmap_clear(start_bit + i);
 
     pmm_free_pages_count += pages;
+}
+
+void pmm_reserve_region(uint32_t start, uint32_t size) {
+    uint32_t start_page = start / PAGE_SIZE;
+    uint32_t end_page = (start + size + PAGE_SIZE - 1) / PAGE_SIZE;
+
+    for (uint32_t i = start_page; i < end_page; i++) {
+        if (!pmm_bitmap_test(i)) {
+            pmm_bitmap_set(i);
+
+            pmm_free_pages_count--;
+        }
+    }
 }
