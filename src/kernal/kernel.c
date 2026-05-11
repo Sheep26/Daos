@@ -6,6 +6,7 @@
 #include <utils/itoa.h>
 #include <memory/pmm.h>
 #include <memory/heap.h>
+#include <font/font.h>
 
 cpu_t cpu;
 
@@ -112,7 +113,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     fillscreen(0x00000000);
     fillrect(100, 100, 100, 100, 0x00FF0000);
-    draw_string("Hello world", 8, 8, 0x00FFFFFF, 0x00000000);
+    draw_string("Hello world", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
 
     flush_buffer();
 }

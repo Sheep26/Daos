@@ -109,13 +109,13 @@ void fillrect(int x, int y, int width, int height, uint32_t colour) {
 			putpixel(x + i, y + z, colour);
 }
 
-void draw_char(char c, int px, int py, uint32_t fg, uint32_t bg) {
-    uint8_t* glyph = font8x8_basic[(uint8_t)c];
+void draw_char(char c, int px, int py, uint32_t fg, uint32_t bg, font_t font) {
+    uint8_t *glyph = font.font_data + ((uint8_t) c * font.font_height);
 
-    for (int y = 0; y < FONT_HEIGHT; y++) {
+    for (int y = 0; y < font.font_height; y++) {
         uint8_t row = glyph[y];
 
-        for (int x = 0; x < FONT_WIDTH; x++) {
+        for (int x = 0; x < font.font_width; x++) {
             if (row & (1 << x))
                 putpixel(px + x, py + y, fg);
             else
@@ -124,9 +124,12 @@ void draw_char(char c, int px, int py, uint32_t fg, uint32_t bg) {
     }
 }
 
-void draw_string(const char *s, int x, int y, uint32_t fg, uint32_t bg) {
-    while (*s++)
-        draw_char(*(s - 1), (x += FONT_WIDTH) - FONT_WIDTH, y, fg, bg);
+void draw_string(const char *s, int x, int y, uint32_t fg, uint32_t bg, font_t font) {
+    while (*s++) {
+        draw_char(*(s - 1), x, y, fg, bg, font);
+
+		x += font.font_width;
+	}
 }
 
 void flush_buffer() {
