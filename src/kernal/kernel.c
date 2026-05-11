@@ -110,8 +110,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
-    fillscreen(0x0000FF00);
+    fillscreen(0x00000000);
     fillrect(100, 100, 100, 100, 0x00FF0000);
+    draw_string("Hello world", 8, 8, 0x00FFFFFF, 0x00000000);
 
     flush_buffer();
 }

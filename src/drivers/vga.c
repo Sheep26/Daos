@@ -109,6 +109,26 @@ void fillrect(int x, int y, int width, int height, uint32_t colour) {
 			putpixel(x + i, y + z, colour);
 }
 
+void draw_char(char c, int px, int py, uint32_t fg, uint32_t bg) {
+    uint8_t* glyph = font8x8_basic[(uint8_t)c];
+
+    for (int y = 0; y < FONT_HEIGHT; y++) {
+        uint8_t row = glyph[y];
+
+        for (int x = 0; x < FONT_WIDTH; x++) {
+            if (row & (1 << x))
+                putpixel(px + x, py + y, fg);
+            else
+                putpixel(px + x, py + y, bg);
+        }
+    }
+}
+
+void draw_string(const char *s, int x, int y, uint32_t fg, uint32_t bg) {
+    while (*s++)
+        draw_char(*(s - 1), (x += FONT_WIDTH) - FONT_WIDTH, y, fg, bg);
+}
+
 void flush_buffer() {
     for (uint32_t pixel = 0; pixel <= vga.framebuffer_height * (vga.framebuffer_pitch/4); pixel++)
 		vga.framebuffer[pixel] = vga.backbuffer[pixel];

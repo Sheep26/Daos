@@ -9,6 +9,7 @@
 #include <utils/itoa.h>
 #include <drivers/io.h>
 #include <memory/liballoc/liballoc.h>
+#include <font/font8x8_basic.h>
 
 enum video_type {
 	VIDEO_TYPE_NONE = 0x00,
@@ -45,6 +46,10 @@ void setup_vga(multiboot_tag_framebuffer_t* fb_tag);
 void putpixel(int x, int y, uint32_t colour);
 void fillscreen(uint32_t colour);
 void fillrect(int x, int y, int width, int height, uint32_t colour);
+
+void draw_char(char c, int px, int py, uint32_t fg, uint32_t bg);
+void draw_string(const char* s, int x, int y, uint32_t fg, uint32_t bg);
+
 void flush_buffer();
 
 #endif
