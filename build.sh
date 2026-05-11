@@ -3,7 +3,11 @@ mkdir build
 mkdir build/isodir
 mkdir -p build/isodir/boot/grub
 
-i686-elf-as src/boot.s -o build/boot.o
+for file in src/*.s; do
+    name=$(basename "$file" .s)
+
+    i686-elf-as -c "$file" -o "build/$name.o"
+done
 
 for file in libc/*/*.c; do
     name=$(basename "$file" .c)
