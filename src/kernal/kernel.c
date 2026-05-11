@@ -1,10 +1,11 @@
+#include <string.h>
+#include <stdint.h>
 #include <drivers/vga.h>
 #include <drivers/cpu.h>
 #include <multiboot.h>
 #include <utils/itoa.h>
-#include <string.h>
 #include <memory/pmm.h>
-#include <stdint.h>
+#include <memory/heap.h>
 
 cpu_t cpu;
 
@@ -97,9 +98,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_print("\n");
 
     // Init pmm and heap.
-    pmm_init(mmap_entries, max_addr, mmap_entry_count, &_kernel_end);
+    pmm_init(mmap_entries, max_addr, mmap_entry_count, (uint32_t) &_kernel_end);
     pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
-    heap_init(&_kernel_end);
+    heap_init((uint32_t) &_kernel_end);
 
     init_cpu(&cpu);
 
