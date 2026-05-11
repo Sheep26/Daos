@@ -1,4 +1,5 @@
 #include <memory/pmm.h>
+#include <utils/itoa.h>
 
 static uint8_t* pmm_bitmap = 0;
 static uint64_t pmm_bitmap_size = 0;
@@ -108,4 +109,16 @@ void pmm_reserve_region(uint32_t start, uint32_t size) {
             pmm_free_pages_count--;
         }
     }
+
+    serial_print("Reserved memory region: ");
+    
+    char start_buf[32];
+    char end_buf[32];
+    itoa(start, start_buf, 16);
+    itoa(start + size, end_buf, 16);
+
+    serial_print(start_buf);
+    serial_print(" - ");
+    serial_print(end_buf);
+    serial_print("\n");
 }

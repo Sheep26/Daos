@@ -96,6 +96,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_print("MB");
     serial_print("\n");
 
+    // Init pmm and heap.
     pmm_init(mmap_entries, max_addr, mmap_entry_count, &_kernel_end);
     pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
     heap_init(&_kernel_end);
@@ -109,5 +110,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     setup_vga(fb_tag);
 
     fillscreen(0x0000FF00);
+    fillrect(100, 100, 100, 100, 0x00FF0000);
+
     flush_buffer();
 }

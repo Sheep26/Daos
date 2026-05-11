@@ -110,6 +110,6 @@ void fillrect(int x, int y, int width, int height, uint32_t colour) {
 }
 
 void flush_buffer() {
-    for (uint32_t pixel = 0; pixel <= vga.framebuffer_height * vga.framebuffer_pitch; pixel++)
+    for (uint32_t pixel = 0; pixel <= vga.framebuffer_height * (vga.framebuffer_pitch/4); pixel++)
 		vga.framebuffer[pixel] = vga.backbuffer[pixel];
 }
