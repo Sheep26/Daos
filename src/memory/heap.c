@@ -29,10 +29,7 @@ void* liballoc_alloc(int pages) {
 }
 
 int liballoc_free(void* ptr, int pages) {
-    (void)ptr;
-    (void)pages;
-
-    // TODO: implement later (bitmap or free list)
+    // TODO: implement later
 
     return 0;
 }
