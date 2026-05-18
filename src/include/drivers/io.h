@@ -33,6 +33,16 @@ static inline void outsw(uint16_t port, const void *addr, uint32_t count) {
         : "memory");
 }
 
+static inline uint16_t inw(uint16_t port) {
+    uint16_t ret;
+    __asm__ volatile ( "inw %w1, %w0" : "=a"(ret) : "Nd"(port) : "memory");
+    return ret;
+}
+
+static inline void outw(uint16_t port, uint16_t val) {
+    __asm__ volatile ( "outw %w0, %w1" : : "a"(val), "Nd"(port) : "memory");
+}
+
 void serial_init(void);
 void serial_print(const char *str);
 uint8_t ps2_keyboard_input(void);

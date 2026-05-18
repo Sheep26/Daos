@@ -1,1 +1,1 @@
-qemu-system-i386 -cdrom build/daos.iso -m 128 -serial stdio -vga std -drive file=disk.img,format=raw,if=ide,cache=none
+qemu-system-i386 -cdrom build/daos.iso -m 128 -serial stdio -vga std -drive file=disk.img,format=raw,if=ide,cache=none -boot order=dc
