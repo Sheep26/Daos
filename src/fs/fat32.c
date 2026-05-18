@@ -22,12 +22,10 @@ static uint8_t choose_spc(uint32_t total_sectors) {
     return 128;
 }
 
-int find_dir_slot(fat32_disk_t *fat32_disk, uint16_t *dir_sector) {
-    directory_entry_t *entries = (directory_entry_t*) dir_sector;
-
+int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries) {
     int total = (fat32_disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t);
 
-    for (int i = 0; i < 16; i++)
+    for (int i = 0; i < total; i++)
         if (entries[i].name[0] == 0x00 || entries[i].name[0] == 0xE5)
             return i;
 
@@ -61,7 +59,7 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 
     e->size = size;
 
-    write_sectors(dir_lba, fat32_disk->bpb->sectors_per_cluster, sector, fat32_disk->ata);
+    write_sectors(dir_lba, fat32_disk->bpb->sectors_per_cluster, (uint16_t*) sector, fat32_disk->ata);
 
     free(sector);
     return 1;
@@ -79,7 +77,7 @@ int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, director
     char formatted[11];
     fat_format_name(name, formatted);
 
-    for (int i = 0; i < (disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t); i++) {
+    for (uint32_t i = 0; i < (disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t); i++) {
         if (entries[i].name[0] == 0x00)
             break;
 
@@ -157,13 +155,14 @@ void fat_format_name(char *in, char out[11]) {
             out[j + k++] = in[i++];
 }
 
-void fat_load(fat32_disk_t *fat32_disk) {
+int fat_load(fat32_disk_t *fat32_disk) {
     uint32_t *fat = malloc(fat32_disk->fat_sectors * 512);
 
     if (!read_sectors(fat32_disk->fat_start, fat32_disk->fat_sectors, (uint16_t*) fat, fat32_disk->ata))
         return 0;
 
     fat32_disk->fat = fat;
+    return 1;
 }
 
 void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
@@ -261,7 +260,7 @@ uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size) {
     uint32_t first_cluster = 0;
     uint32_t prev_cluster = 0;
 
-    uint8_t *ptr = (uint8_t*)data;
+    uint8_t *ptr = (uint8_t*) data;
 
     for (uint32_t i = 0; i < clusters_needed; i++) {
         uint32_t cluster = fat_alloc_cluster(fat32_disk);

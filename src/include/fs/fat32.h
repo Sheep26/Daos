@@ -83,12 +83,12 @@ typedef struct {
     ata_t *ata;
     bpb_t *bpb;
 
-    uint8_t *fat;
+    uint32_t *fat;
     uint32_t fat_start;
     uint32_t fat_sectors;
 } fat32_disk_t;
 
-void fat_load(fat32_disk_t *fat32_disk);
+int fat_load(fat32_disk_t *fat32_disk);
 void fat_init(fat32_disk_t *fat32_disk);
 void fat_flush(fat32_disk_t *fat32_disk);
 uint32_t cluster_to_lba(fat32_disk_t *fat32_disk, uint32_t cluster);
@@ -101,7 +101,7 @@ void fat_format_name(char *in, char out[11]);
 int format(fat32_disk_t *fat32_disk, char *label);
 
 int create_directory_entry(fat32_disk_t *fat32_disk, uint32_t dir_cluster, char *name, uint32_t first_cluster, uint32_t size);
-int find_dir_slot(fat32_disk_t *fat32_disk, uint16_t *dir_sector);
+int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries);
 
 uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size);
 void write_cluster(fat32_disk_t *fat32_disk, uint32_t cluster, void *data);

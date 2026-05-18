@@ -24,13 +24,14 @@ void* liballoc_alloc(int pages) {
     if (!phys)
         return NULL;
 
-    void* virt = (void*)((uint32_t)phys + _kernel_end);
+    void* virt = (void*) ((uint32_t) phys + _kernel_end);
     return virt;
 }
 
 int liballoc_free(void* ptr, int pages) {
-    // TODO: implement later
+    void *phys = (void*) ((uint32_t) ptr - _kernel_end);
 
+    pmm_free_pages(phys, pages);
     return 0;
 }
 
