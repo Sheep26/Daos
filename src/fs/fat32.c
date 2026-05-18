@@ -22,8 +22,10 @@ static uint8_t choose_spc(uint32_t total_sectors) {
     return 128;
 }
 
-int find_dir_slot(uint16_t *dir_sector) {
-    directory_entry_t *entries = (directory_entry_t*)dir_sector;
+int find_dir_slot(fat32_disk_t *fat32_disk, uint16_t *dir_sector) {
+    directory_entry_t *entries = (directory_entry_t*) dir_sector;
+
+    int total = (fat32_disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t);
 
     for (int i = 0; i < 16; i++)
         if (entries[i].name[0] == 0x00 || entries[i].name[0] == 0xE5)
@@ -40,7 +42,7 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 
     directory_entry_t *entries = (directory_entry_t*) sector;
 
-    int slot = find_dir_slot(entries);
+    int slot = find_dir_slot(fat32_disk, entries);
 
     if (slot < 0) {
         free(sector);
@@ -63,6 +65,72 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 
     free(sector);
     return 1;
+}
+
+int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, directory_entry_t *out) {
+    uint32_t lba = cluster_to_lba(disk, dir_cluster);
+
+    uint8_t *sector = malloc(disk->bpb->sectors_per_cluster * 512);
+
+    read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)sector, disk->ata);
+
+    directory_entry_t *entries = (directory_entry_t*)sector;
+
+    char formatted[11];
+    fat_format_name(name, formatted);
+
+    for (int i = 0; i < (disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t); i++) {
+        if (entries[i].name[0] == 0x00)
+            break;
+
+        if (memcmp(entries[i].name, formatted, 11) == 0) {
+            if (entries[i].name[0] == 0xE5) // Deleted files
+                continue;
+
+            if (entries[i].attr == 0x0F) // Deleted files
+                continue;
+
+            *out = entries[i];
+
+            free(sector);
+            return 1;
+        }
+    }
+
+    free(sector);
+    return 0;
+}
+
+void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer) {
+    uint32_t lba = cluster_to_lba(disk, cluster);
+
+    read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)buffer, disk->ata);
+}
+
+uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer) {
+    directory_entry_t e;
+
+    if (!fat_find_file(disk, disk->bpb->root_cluster, name, &e))
+        return 0;
+
+    uint32_t cluster = (e.first_cluster_high << 16) | e.first_cluster_low;
+
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
+
+    uint8_t *out = (uint8_t*)out_buffer;
+
+    uint32_t remaining = e.size;
+
+    while (cluster < 0x0FFFFFF8 && remaining > 0) {
+        read_cluster(disk, cluster, out);
+
+        cluster = disk->fat[cluster];
+
+        out += cluster_size;
+        remaining = (remaining > cluster_size) ? remaining - cluster_size : 0;
+    }
+
+    return e.size;
 }
 
 void fat_format_name(char *in, char out[11]) {
@@ -100,6 +168,52 @@ void fat_load(fat32_disk_t *fat32_disk) {
 
 void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     fat32_disk->ata = ata;
+
+    uint8_t sector[512];
+
+    if (!read_sectors(0, 1, (uint16_t*)sector, ata)) {
+        serial_print("Drive: ATA");
+
+        char buf[32];
+        itoa(fat32_disk->ata->identifier, buf, 10);
+
+        serial_print(buf);
+        serial_print("Failed to read boot sector\n");
+
+        return;
+    }
+
+    fat32_disk->bpb = malloc(sizeof(bpb_t));
+
+    if (!fat32_disk->bpb) {
+        serial_print("Failed to allocate BPB\n");
+
+        return;
+    }
+
+    // Copy bpb from sector.
+    memcpy(fat32_disk->bpb, sector, sizeof(bpb_t));
+
+    // Validate.
+    if (fat32_disk->bpb->signature != 0xAA55) {
+        serial_print("Invalid FAT32 signature\n");
+
+        free(fat32_disk->bpb);
+        fat32_disk->bpb = NULL;
+
+        return;
+    }
+
+    if (fat32_disk->bpb->sectors_per_fat_32 == 0) {
+        serial_print("Not a FAT32 filesystem\n");
+
+        free(fat32_disk->bpb);
+        fat32_disk->bpb = NULL;
+
+        return;
+    }
+
+    fat_init(fat32_disk);
 }
 
 void fat_init(fat32_disk_t *fat32_disk) {

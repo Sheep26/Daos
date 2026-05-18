@@ -6,6 +6,7 @@
 #include <drivers/ata.h>
 #include <memory/liballoc/liballoc.h>
 #include <string.h>
+#include <utils/itoa.h>
 
 typedef struct __attribute__((packed)) {
     uint8_t jump[3];
@@ -87,16 +88,26 @@ typedef struct {
     uint32_t fat_sectors;
 } fat32_disk_t;
 
-int format(fat32_disk_t *fat32_disk, char *label);
-int create_directory_entry(fat32_disk_t *fat32_disk, uint32_t dir_cluster, char *name, uint32_t first_cluster, uint32_t size);
-uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size);
 void fat_load(fat32_disk_t *fat32_disk);
-void fat_format_name(char *in, char out[11]);
 void fat_init(fat32_disk_t *fat32_disk);
-void write_cluster(fat32_disk_t *fat32_disk, uint32_t cluster, void *data);
 void fat_flush(fat32_disk_t *fat32_disk);
-int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size);
 uint32_t cluster_to_lba(fat32_disk_t *fat32_disk, uint32_t cluster);
+
 void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata);
+int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, directory_entry_t *out);
+
+void fat_format_name(char *in, char out[11]);
+
+int format(fat32_disk_t *fat32_disk, char *label);
+
+int create_directory_entry(fat32_disk_t *fat32_disk, uint32_t dir_cluster, char *name, uint32_t first_cluster, uint32_t size);
+int find_dir_slot(fat32_disk_t *fat32_disk, uint16_t *dir_sector);
+
+uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size);
+void write_cluster(fat32_disk_t *fat32_disk, uint32_t cluster, void *data);
+int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size);
+
+void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer);
+uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer);
 
 #endif

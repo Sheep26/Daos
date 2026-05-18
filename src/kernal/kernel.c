@@ -107,18 +107,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
     heap_init((uint32_t) &_kernel_end);
 
-    init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
-    int ata0_indenify = ata_identify(&ata0);
-
-    if (ata0_indenify) {
-        fat_disk_init(&fat32_t_disk0, &ata0);
-
-        format(&fat32_t_disk0, "Rahh");
-
-        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
-        fs_write_file(&fat32_t_disk0, "Wooo.txt", wooo, sizeof(wooo));
-    }
-
     init_cpu(&cpu);
 
     serial_print("CPU Vendor: ");
@@ -127,9 +115,27 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
-    fillscreen(0x00000000);
-    fillrect(100, 100, 100, 100, 0x00FF0000);
-    draw_string("Hello world", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+    init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
+    int ata0_indenify = ata_identify(&ata0);
 
-    flush_buffer();
+    if (ata0_indenify) {
+        fat_disk_init(&fat32_t_disk0, &ata0);
+
+        // format(&fat32_t_disk0, "Rahh");
+
+        // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+        // fs_write_file(&fat32_t_disk0, "Wooo.txt", wooo, sizeof(wooo));
+
+        char read_buf[2048];
+
+        fs_read_file(&fat32_t_disk0, "Wooo.txt", read_buf);
+        serial_print(read_buf);
+
+        serial_print("\n");
+
+        fillscreen(0x00000000);
+        draw_string(read_buf, 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+
+        flush_buffer();
+    }
 }
