@@ -42,34 +42,29 @@ void println_tty(const char *str, uint8_t attrib, tty_t *tty) {
 }
 
 void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
-	serial_print("Setting up VGA\n");
+	serial_println("Setting up VGA");
 
     char buf[32];
 
     serial_print("VGA Width: ");
     itoa(fb_tag->framebuffer_width, buf, 10);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 
     serial_print("VGA Height: ");
     itoa(fb_tag->framebuffer_height, buf, 10);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 
     serial_print("VGA Pitch: ");
     itoa(fb_tag->framebuffer_pitch, buf, 10);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 
     serial_print("VGA BPP: ");
     itoa(fb_tag->framebuffer_bpp, buf, 10);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 
     serial_print("VGA TYPE: ");
     itoa(fb_tag->framebuffer_type, buf, 10);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 
 	vga.framebuffer_addr = fb_tag->framebuffer_addr;
 	vga.framebuffer = (uint32_t*) fb_tag->framebuffer_addr;
@@ -82,7 +77,7 @@ void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
 	uint32_t *backbuffer = malloc(vga.framebuffer_height * vga.framebuffer_pitch);
 	vga.backbuffer = backbuffer;
 
-	serial_print("VGA setup complete\n");
+	serial_println("VGA setup complete");
 }
 
 void putpixel(int x, int y, uint32_t colour) {

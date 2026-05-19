@@ -14,8 +14,7 @@ void heap_init(uint32_t kernel_end) {
 
     char buf[32];
     itoa(kernel_end, buf, 16);
-    serial_print(buf);
-    serial_print("\n");
+    serial_println(buf);
 }
 
 void* liballoc_alloc(int pages) {

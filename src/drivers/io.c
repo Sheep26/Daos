@@ -22,3 +22,8 @@ void serial_print(const char *str) {
     while (*str)
         outb(COM1, *str++);
 }
+
+void serial_println(const char *str) {
+    serial_print(str);
+    serial_print("\n");
+}

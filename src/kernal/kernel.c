@@ -34,7 +34,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     serial_init();
 
-    serial_print("Setting up multiboot\n");
+    serial_println("Setting up multiboot");
 
     uint8_t* ptr = (uint8_t*) addr;
     uint32_t total_size = *(uint32_t*) ptr;
@@ -88,19 +88,18 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     if (!fb_tag) {
-        serial_print("ERROR: Framebuffer uninitalized");
+        serial_println("ERROR: Framebuffer uninitalized");
 
         while (1);
     }
 
-    serial_print("Setup multiboot\n");
+    serial_println("Setup multiboot");
 
     char buf[32];
     itoa(total_usable_ram / (1024 * 1024), buf, 10);
     serial_print("Usable RAM: ");
     serial_print(buf);
-    serial_print("MB");
-    serial_print("\n");
+    serial_println("MB");
 
     // Init pmm and heap.
     pmm_init(mmap_entries, max_addr, mmap_entry_count, (uint32_t) &_kernel_end);
@@ -110,8 +109,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     init_cpu(&cpu);
 
     serial_print("CPU Vendor: ");
-    serial_print(cpu.vendor);
-    serial_print("\n");
+    serial_println(cpu.vendor);
 
     setup_vga(fb_tag);
 
@@ -121,20 +119,20 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     if (ata0_indenify) {
         fat_disk_init(&fat32_disk0, &ata0);
 
-        format(&fat32_disk0, "Rahh");
+        // format(&fat32_disk0, "Rahh");
 
-        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
-        fs_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo));
+        // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+        // fs_write_file(&fat32_disk0, "Wooo2.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
 
-        char read_buf[2048];
+        fs_list_t fs_list;
 
-        fs_read_file(&fat32_disk0, "Wooo.txt", read_buf);
-        serial_print(read_buf);
+        fs_ls(&fat32_disk0, fat32_disk0.bpb->root_cluster, &fs_list);
 
-        serial_print("\n");
+        for (int i = 0; i < fs_list.count; i++)
+            serial_println(fs_list.files[i].name);
 
         fillscreen(0x00000000);
-        draw_string(read_buf, 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        draw_string("It should worky.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
 
         flush_buffer();
     }

@@ -1,0 +1,1 @@
+mount -o loop disk.img /mnt

@@ -8,6 +8,8 @@
 #include <string.h>
 #include <utils/itoa.h>
 
+#define MAX_FILES 128
+
 typedef struct __attribute__((packed)) {
     uint8_t jump[3];
     char oem[8];
@@ -88,6 +90,18 @@ typedef struct {
     uint32_t fat_sectors;
 } fat32_disk_t;
 
+typedef struct {
+    char name[16];
+    uint32_t cluster;
+    uint32_t size;
+    uint8_t is_dir;
+} fs_node_t;
+
+typedef struct {
+    fs_node_t files[MAX_FILES];
+    int count;
+} fs_list_t;
+
 int fat_load(fat32_disk_t *fat32_disk);
 void fat_init(fat32_disk_t *fat32_disk);
 void fat_flush(fat32_disk_t *fat32_disk);
@@ -105,9 +119,11 @@ int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries);
 
 uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size);
 void write_cluster(fat32_disk_t *fat32_disk, uint32_t cluster, void *data);
-int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size);
+int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size, uint32_t dir_cluster);
 
 void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer);
-uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer);
+uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster);
+
+void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, fs_list_t *out);
 
 #endif

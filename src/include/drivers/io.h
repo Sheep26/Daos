@@ -45,6 +45,7 @@ static inline void outw(uint16_t port, uint16_t val) {
 
 void serial_init(void);
 void serial_print(const char *str);
+void serial_println(const char *str);
 uint8_t ps2_keyboard_input(void);
 
 #endif

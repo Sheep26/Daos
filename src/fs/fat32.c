@@ -105,10 +105,10 @@ void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer) {
     read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)buffer, disk->ata);
 }
 
-uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer) {
+uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster) {
     directory_entry_t e;
 
-    if (!fat_find_file(disk, disk->bpb->root_cluster, name, &e))
+    if (!fat_find_file(disk, dir_cluster, name, &e))
         return 0;
 
     uint32_t cluster = (e.first_cluster_high << 16) | e.first_cluster_low;
@@ -177,7 +177,7 @@ void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
         itoa(fat32_disk->ata->identifier, buf, 10);
 
         serial_print(buf);
-        serial_print("Failed to read boot sector\n");
+        serial_println("Failed to read boot sector");
 
         return;
     }
@@ -185,7 +185,7 @@ void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     fat32_disk->bpb = malloc(sizeof(bpb_t));
 
     if (!fat32_disk->bpb) {
-        serial_print("Failed to allocate BPB\n");
+        serial_println("Failed to allocate BPB");
 
         return;
     }
@@ -195,7 +195,7 @@ void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
 
     // Validate.
     if (fat32_disk->bpb->signature != 0xAA55) {
-        serial_print("Invalid FAT32 signature\n");
+        serial_println("Invalid FAT32 signature");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
@@ -204,7 +204,7 @@ void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     }
 
     if (fat32_disk->bpb->sectors_per_fat_32 == 0) {
-        serial_print("Not a FAT32 filesystem\n");
+        serial_println("Not a FAT32 filesystem");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
@@ -289,13 +289,13 @@ uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size) {
     return first_cluster;
 }
 
-int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size) {
+int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size, uint32_t dir_cluster) {
     uint32_t cluster = write_file(fat32_disk, data, size);
 
     if (!cluster || !size)
         return 0;
 
-    create_directory_entry(fat32_disk, fat32_disk->bpb->root_cluster, name, cluster, size);
+    create_directory_entry(fat32_disk, dir_cluster, name, cluster, size);
     return 1;
 }
 
@@ -304,15 +304,93 @@ void fat_flush(fat32_disk_t *fat32_disk) {
     write_sectors(fat32_disk->bpb->reserved_sectors + fat32_disk->bpb->sectors_per_fat_32, fat32_disk->bpb->sectors_per_fat_32, (uint16_t*) fat32_disk->fat, fat32_disk->ata);
 }
 
+void fat_to_string(char raw[11], char *out) {
+    int i = 0, j = 0;
+
+    // name part (0–7)
+    for (i = 0; i < 8; i++) {
+        if (raw[i] == ' ')
+            break;
+        out[j++] = raw[i];
+    }
+
+    // extension?
+    int has_ext = 0;
+    for (int k = 8; k < 11; k++) {
+        if (raw[k] != ' ') {
+            has_ext = 1;
+            break;
+        }
+    }
+
+    if (has_ext) {
+        out[j++] = '.';
+
+        for (i = 8; i < 11; i++) {
+            if (raw[i] == ' ')
+                break;
+            out[j++] = raw[i];
+        }
+    }
+
+    out[j] = '\0';
+}
+
+void add_fs_list_entry(fs_list_t *list, directory_entry_t *e) {
+    if (list->count >= MAX_FILES)
+        return;
+
+    fs_node_t *n = &list->files[list->count++];
+
+    fat_to_string(e->name, n->name);
+
+    n->cluster = (e->first_cluster_high << 16) | e->first_cluster_low;
+    n->size = e->size;
+    n->is_dir = (e->attr & 0x10) ? 1 : 0;
+}
+
+void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, fs_list_t *out) {
+    out->count = 0;
+    uint32_t cluster = dir_cluster;
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
+
+    uint8_t *buffer = malloc(cluster_size);
+
+    while (cluster < 0x0FFFFFF8 && cluster != 0) {
+        read_cluster(disk, cluster, buffer);
+
+        directory_entry_t *entries = (directory_entry_t *)buffer;
+
+        int count = cluster_size / sizeof(directory_entry_t);
+
+        for (int i = 0; i < count; i++) {
+            if (entries[i].name[0] == 0x00)
+                return;
+
+            if (entries[i].name[0] == 0xE5)
+                continue;
+
+            if (entries[i].attr == 0x0F)
+                continue;
+
+            add_fs_list_entry(out, &entries[i]);
+        }
+
+        cluster = disk->fat[cluster];
+    }
+
+    free(buffer);
+}
+
 int format(fat32_disk_t *fat32_disk, char *label) {
     if (sizeof(bpb_t) != 512) {
-        serial_print("BPB BAD SIZE\n");
+        serial_println("BPB BAD SIZE");
 
         return 0;
     }
 
     if (sizeof(fsinfo_t) != 512) {
-        serial_print("FSINFO BAD SIZE\n");
+        serial_println("FSINFO BAD SIZE");
 
         return 0;
     }
@@ -467,8 +545,7 @@ int format(fat32_disk_t *fat32_disk, char *label) {
     fat_init(fat32_disk);
 
     serial_print("Formatted disk: ");
-    serial_print(label);
-    serial_print("\n");
+    serial_println(label);
 
     return 1;
 }
