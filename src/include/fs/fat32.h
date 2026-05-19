@@ -97,10 +97,10 @@ typedef struct {
     uint32_t cluster;
     uint32_t size;
     uint8_t is_dir;
-} file_t;
+} directory_node_t;
 
 typedef struct {
-    file_t files[MAX_FILES];
+    directory_node_t files[MAX_FILES];
     int count;
 } directory_t;
 

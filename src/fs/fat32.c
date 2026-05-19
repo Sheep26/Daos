@@ -340,7 +340,7 @@ void add_fs_list_entry(directory_t *directory, directory_entry_t *e) {
     if (directory->count >= MAX_FILES)
         return;
 
-    file_t *n = &directory->files[directory->count++];
+    directory_node_t *n = &directory->files[directory->count++];
 
     fat_to_string(e->name, n->name);
 
