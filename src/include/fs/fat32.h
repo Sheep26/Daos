@@ -8,7 +8,7 @@
 #include <string.h>
 #include <utils/itoa.h>
 
-#define MAX_FILES 128
+#define MAX_NODES 128
 #define ATTR_FOLDER 0x10
 #define ATTR_FILE 0x20
 
@@ -100,7 +100,7 @@ typedef struct {
 } directory_node_t;
 
 typedef struct {
-    directory_node_t files[MAX_FILES];
+    directory_node_t nodes[MAX_NODES];
     int count;
 } directory_t;
 
