@@ -12,7 +12,7 @@
 
 cpu_t cpu;
 ata_t ata0;
-fat32_disk_t fat32_t_disk0;
+fat32_disk_t fat32_disk0;
 
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
@@ -119,16 +119,16 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     int ata0_indenify = ata_identify(&ata0);
 
     if (ata0_indenify) {
-        fat_disk_init(&fat32_t_disk0, &ata0);
+        fat_disk_init(&fat32_disk0, &ata0);
 
-        // format(&fat32_t_disk0, "Rahh");
+        format(&fat32_disk0, "Rahh");
 
-        // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
-        // fs_write_file(&fat32_t_disk0, "Wooo.txt", wooo, sizeof(wooo));
+        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+        fs_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo));
 
         char read_buf[2048];
 
-        fs_read_file(&fat32_t_disk0, "Wooo.txt", read_buf);
+        fs_read_file(&fat32_disk0, "Wooo.txt", read_buf);
         serial_print(read_buf);
 
         serial_print("\n");
