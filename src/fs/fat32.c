@@ -32,7 +32,7 @@ int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries) {
     return -1;
 }
 
-int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char *name, uint32_t first_cluster, uint32_t size) {
+int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char *name, uint32_t first_cluster, uint32_t size, uint8_t attr) {
     uint32_t dir_lba = cluster_to_lba(fat32_disk, dir_cluster);
 
     uint8_t *sector = malloc(fat32_disk->bpb->sectors_per_cluster * 512);
@@ -52,7 +52,7 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 
     fat_format_name(name, e->name);
 
-    e->attr = 0x20;
+    e->attr = attr;
 
     e->first_cluster_low = (uint16_t)(first_cluster & 0xFFFF);
     e->first_cluster_high = (uint16_t)(first_cluster >> 16);
@@ -295,7 +295,7 @@ int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t siz
     if (!cluster || !size)
         return 0;
 
-    create_directory_entry(fat32_disk, dir_cluster, name, cluster, size);
+    create_directory_entry(fat32_disk, dir_cluster, name, cluster, size, ATTR_FILE);
     return 1;
 }
 
@@ -336,11 +336,11 @@ void fat_to_string(char raw[11], char *out) {
     out[j] = '\0';
 }
 
-void add_fs_list_entry(fs_list_t *list, directory_entry_t *e) {
-    if (list->count >= MAX_FILES)
+void add_fs_list_entry(directory_t *directory, directory_entry_t *e) {
+    if (directory->count >= MAX_FILES)
         return;
 
-    fs_node_t *n = &list->files[list->count++];
+    file_t *n = &directory->files[directory->count++];
 
     fat_to_string(e->name, n->name);
 
@@ -349,7 +349,7 @@ void add_fs_list_entry(fs_list_t *list, directory_entry_t *e) {
     n->is_dir = (e->attr & 0x10) ? 1 : 0;
 }
 
-void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, fs_list_t *out) {
+void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out) {
     out->count = 0;
     uint32_t cluster = dir_cluster;
     uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
