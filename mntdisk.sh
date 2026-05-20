@@ -1,1 +1,1 @@
-mount -o loop disk.img /mnt
+mount -o loop disk.img /mnt/disk

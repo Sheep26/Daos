@@ -9,7 +9,7 @@
 #include <utils/itoa.h>
 
 #define MAX_NODES 128
-#define ATTR_FOLDER 0x10
+#define ATTR_DIR 0x10
 #define ATTR_FILE 0x20
 
 typedef struct __attribute__((packed)) {
@@ -74,13 +74,13 @@ typedef struct {
 } dir_info_t;
 
 typedef struct __attribute__((packed)) {
-    uint32_t lead_signature;   // 0x00
-    uint8_t  reserved1[480];   // 0x04
-    uint32_t struct_signature; // 0x1E4
-    uint32_t free_count;       // 0x1E8
-    uint32_t next_free;        // 0x1EC
-    uint8_t  reserved2[12];    // 0x1F0
-    uint32_t trail_signature;  // 0x1FC
+    uint32_t lead_signature;
+    uint8_t  reserved1[480];
+    uint32_t struct_signature;
+    uint32_t free_count;
+    uint32_t next_free;
+    uint8_t  reserved2[12];
+    uint32_t trail_signature;
 } fsinfo_t;
 
 typedef struct {
@@ -95,6 +95,7 @@ typedef struct {
 typedef struct {
     char name[16];
     uint32_t cluster;
+    uint32_t dir_cluster;
     uint32_t size;
     uint8_t is_dir;
 } directory_node_t;
@@ -127,5 +128,6 @@ void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer);
 uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster);
 
 void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out);
+int fs_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name);
 
 #endif

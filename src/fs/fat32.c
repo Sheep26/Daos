@@ -54,8 +54,8 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 
     e->attr = attr;
 
-    e->first_cluster_low = (uint16_t)(first_cluster & 0xFFFF);
-    e->first_cluster_high = (uint16_t)(first_cluster >> 16);
+    e->first_cluster_low = (uint16_t) (first_cluster & 0xFFFF);
+    e->first_cluster_high = (uint16_t) (first_cluster >> 16);
 
     e->size = size;
 
@@ -336,7 +336,7 @@ void fat_to_string(char raw[11], char *out) {
     out[j] = '\0';
 }
 
-void add_fs_list_entry(directory_t *directory, directory_entry_t *e) {
+void add_fs_list_entry(directory_t *directory, directory_entry_t *e, uint32_t dir_cluster) {
     if (directory->count >= MAX_NODES)
         return;
 
@@ -345,6 +345,7 @@ void add_fs_list_entry(directory_t *directory, directory_entry_t *e) {
     fat_to_string(e->name, n->name);
 
     n->cluster = (e->first_cluster_high << 16) | e->first_cluster_low;
+    n->dir_cluster = dir_cluster;
     n->size = e->size;
     n->is_dir = (e->attr & 0x10) ? 1 : 0;
 }
@@ -373,13 +374,69 @@ void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out) {
             if (entries[i].attr == 0x0F)
                 continue;
 
-            add_fs_list_entry(out, &entries[i]);
+            add_fs_list_entry(out, &entries[i], dir_cluster);
         }
 
         cluster = disk->fat[cluster];
     }
 
     free(buffer);
+}
+
+int fs_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name) {
+    // Allocate cluster for new directory
+    uint32_t cluster = fat_alloc_cluster(disk);
+
+    if (!cluster)
+        return 0;
+
+    // Mark end-of-chain
+    disk->fat[cluster] = 0x0FFFFFFF;
+
+    fat_flush(disk);
+
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
+
+    // Clear directory cluster
+    uint8_t *buffer = calloc(1, cluster_size);
+
+    if (!buffer)
+        return 0;
+
+    directory_entry_t *entries = (directory_entry_t *) buffer;
+
+    //
+    // "." entry
+    //
+    fat_format_name(".", entries[0].name);
+
+    entries[0].attr = ATTR_DIR;
+
+    entries[0].first_cluster_low = (uint16_t) (cluster & 0xFFFF);
+
+    entries[0].first_cluster_high = (uint16_t) (cluster >> 16);
+
+    //
+    // ".." entry
+    //
+    fat_format_name("..", entries[1].name);
+
+    entries[1].attr = ATTR_DIR;
+
+    entries[1].first_cluster_low = (uint16_t) (parent_cluster & 0xFFFF);
+
+    entries[1].first_cluster_high = (uint16_t) (parent_cluster >> 16);
+
+    // Write new directory cluster
+    write_cluster(disk, cluster, buffer);
+
+    free(buffer);
+
+    // Add entry into parent directory
+    if (!create_directory_entry(disk, parent_cluster, name, cluster, 0, ATTR_DIR))
+        return 0;
+
+    return 1;
 }
 
 int format(fat32_disk_t *fat32_disk, char *label) {

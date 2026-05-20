@@ -122,7 +122,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         // format(&fat32_disk0, "Rahh");
 
         // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
-        // fs_write_file(&fat32_disk0, "Wooo2.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
+        // fs_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
+
+        // fs_mkdir(&fat32_disk0, fat32_disk0.bpb->root_cluster, "WOO");
 
         directory_t dir;
 
