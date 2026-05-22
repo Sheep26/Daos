@@ -126,6 +126,8 @@ int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t siz
 
 void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer);
 uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster);
+uint32_t fs_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster);
+uint32_t fs_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster);
 
 void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out);
 int fs_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name);

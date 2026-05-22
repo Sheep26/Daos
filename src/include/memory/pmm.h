@@ -5,6 +5,7 @@
 #include <stddef.h>
 #include <multiboot.h>
 #include <drivers/io.h>
+#include <utils/itoa.h>
 
 #define PAGE_SIZE 4096
 

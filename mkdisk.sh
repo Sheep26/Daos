@@ -2,4 +2,6 @@ if [ -f "disk.img" ]; then
     rm disk.img
 fi
 
-dd if=/dev/zero of=disk.img bs=1M count=128
+read -p "Disk Size (MiB): " size
+
+dd if=/dev/zero of=disk.img bs=1M count=$size

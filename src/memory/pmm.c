@@ -1,5 +1,4 @@
 #include <memory/pmm.h>
-#include <utils/itoa.h>
 
 static uint8_t* pmm_bitmap = 0;
 static uint64_t pmm_bitmap_size = 0;

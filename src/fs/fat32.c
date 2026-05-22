@@ -105,6 +105,21 @@ void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer) {
     read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)buffer, disk->ata);
 }
 
+uint32_t fs_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
+    directory_entry_t e;
+
+    if (!fat_find_file(disk, dir_cluster, name, &e))
+        return 0;
+
+    return e.size;
+}
+
+uint32_t fs_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
+    directory_entry_t e;
+
+    return fat_find_file(disk, dir_cluster, name, &e);
+}
+
 uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster) {
     directory_entry_t e;
 
@@ -115,7 +130,7 @@ uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t
 
     uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
 
-    uint8_t *out = (uint8_t*)out_buffer;
+    uint8_t *out = (uint8_t*) out_buffer;
 
     uint32_t remaining = e.size;
 
