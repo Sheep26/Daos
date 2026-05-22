@@ -132,7 +132,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
         for (int i = 0; i < dir.count; i++)
             serial_println(dir.nodes[i].name);
-        
+
         fillscreen(0x00000000);
         draw_string("It should worky.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
 
