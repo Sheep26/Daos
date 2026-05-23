@@ -6,7 +6,7 @@
 #include <drivers/ata.h>
 #include <memory/liballoc/liballoc.h>
 #include <string.h>
-#include <utils/itoa.h>
+#include <itoa.h>
 
 #define MAX_NODES 128
 #define ATTR_DIR 0x10

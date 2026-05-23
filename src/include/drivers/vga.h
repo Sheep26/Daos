@@ -6,7 +6,7 @@
 
 #include <stdint.h>
 #include <multiboot.h>
-#include <utils/itoa.h>
+#include <itoa.h>
 #include <drivers/io.h>
 #include <memory/liballoc/liballoc.h>
 #include <font/font.h>

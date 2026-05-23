@@ -3,7 +3,7 @@
 #include <drivers/vga.h>
 #include <drivers/cpu.h>
 #include <multiboot.h>
-#include <utils/itoa.h>
+#include <itoa.h>
 #include <memory/pmm.h>
 #include <memory/heap.h>
 #include <font/font.h>

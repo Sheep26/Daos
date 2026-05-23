@@ -14,7 +14,7 @@
 #define OEM_NAME "DaOS"
 
 #include <stdint.h>
-#include <utils/itoa.h>
+#include <itoa.h>
 #include <drivers/io.h>
 
 typedef struct {

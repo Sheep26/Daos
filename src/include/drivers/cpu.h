@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <cpuid.h>
-#include "io.h"
+#include <drivers/io.h>
 
 typedef struct {
     char vendor[13];

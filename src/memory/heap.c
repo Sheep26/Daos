@@ -1,7 +1,6 @@
 #include <memory/heap.h>
 #include <memory/liballoc/liballoc.h>
 #include <drivers/io.h>
-#include <utils/itoa.h>
 
 static uint8_t* heap_ptr;
 uint32_t _kernel_end;
