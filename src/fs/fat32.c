@@ -22,11 +22,41 @@ static uint8_t choose_spc(uint32_t total_sectors) {
     return 128;
 }
 
+uint32_t cluster_to_lba(fat32_disk_t *fat32_disk, uint32_t cluster) {
+    uint32_t first_data_sector = fat32_disk->bpb->reserved_sectors + (fat32_disk->bpb->fat_count * fat32_disk->bpb->sectors_per_fat_32);
+
+    return first_data_sector + ((cluster - 2) * fat32_disk->bpb->sectors_per_cluster);
+}
+
+void fat_format_name(char *in, char out[11]) {
+    for (int i = 0; i < 11; i++)
+        out[i] = ' ';
+
+    int i = 0, j = 0;
+
+    // name
+    while (in[i] && in[i] != '.' && j < 8)
+        out[j++] = in[i++];
+
+    // skip '.'
+    while (in[i] && in[i] != '.') i++;
+
+    if (in[i] == '.') i++;
+
+    j = 8;
+
+    // extension
+    int k = 0;
+    while (in[i] && k < 3)
+        if (j + k < 11)
+            out[j + k++] = in[i++];
+}
+
 int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries) {
     int total = (fat32_disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t);
 
     for (int i = 0; i < total; i++)
-        if (entries[i].name[0] == 0x00 || entries[i].name[0] == 0xE5)
+        if (entries[i].name[0] == 0x00)
             return i;
 
     return -1;
@@ -82,9 +112,6 @@ int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, director
             break;
 
         if (memcmp(entries[i].name, formatted, 11) == 0) {
-            if (entries[i].name[0] == 0xE5) // Deleted files
-                continue;
-
             if (entries[i].attr == 0x0F) // Deleted files
                 continue;
 
@@ -105,7 +132,7 @@ void read_cluster(fat32_disk_t *disk, uint32_t cluster, void *buffer) {
     read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)buffer, disk->ata);
 }
 
-uint32_t fs_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
+uint32_t fat_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
     directory_entry_t e;
 
     if (!fat_find_file(disk, dir_cluster, name, &e))
@@ -114,13 +141,13 @@ uint32_t fs_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
     return e.size;
 }
 
-uint32_t fs_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
+uint32_t fat_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
     directory_entry_t e;
 
     return fat_find_file(disk, dir_cluster, name, &e);
 }
 
-uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster) {
+uint32_t fat_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster) {
     directory_entry_t e;
 
     if (!fat_find_file(disk, dir_cluster, name, &e))
@@ -144,30 +171,6 @@ uint32_t fs_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t
     }
 
     return e.size;
-}
-
-void fat_format_name(char *in, char out[11]) {
-    for (int i = 0; i < 11; i++)
-        out[i] = ' ';
-
-    int i = 0, j = 0;
-
-    // name
-    while (in[i] && in[i] != '.' && j < 8)
-        out[j++] = in[i++];
-
-    // skip '.'
-    while (in[i] && in[i] != '.') i++;
-
-    if (in[i] == '.') i++;
-
-    j = 8;
-
-    // extension
-    int k = 0;
-    while (in[i] && k < 3)
-        if (j + k < 11)
-            out[j + k++] = in[i++];
 }
 
 int fat_load(fat32_disk_t *fat32_disk) {
@@ -255,12 +258,6 @@ uint32_t fat_alloc_cluster(fat32_disk_t* fat32_disk) {
     return 0;
 }
 
-uint32_t cluster_to_lba(fat32_disk_t *fat32_disk, uint32_t cluster) {
-    uint32_t first_data_sector = fat32_disk->bpb->reserved_sectors + (fat32_disk->bpb->fat_count * fat32_disk->bpb->sectors_per_fat_32);
-
-    return first_data_sector + ((cluster - 2) * fat32_disk->bpb->sectors_per_cluster);
-}
-
 void write_cluster(fat32_disk_t *fat32_disk, uint32_t cluster, void *data) {
     uint32_t lba = cluster_to_lba(fat32_disk, cluster);
 
@@ -304,7 +301,7 @@ uint32_t write_file(fat32_disk_t *fat32_disk, void *data, uint32_t size) {
     return first_cluster;
 }
 
-int fs_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size, uint32_t dir_cluster) {
+int fat_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t size, uint32_t dir_cluster) {
     uint32_t cluster = write_file(fat32_disk, data, size);
 
     if (!cluster || !size)
@@ -351,11 +348,11 @@ void fat_to_string(char raw[11], char *out) {
     out[j] = '\0';
 }
 
-void add_fs_list_entry(directory_t *directory, directory_entry_t *e, uint32_t dir_cluster) {
+void add_fs_list_entry(fat_directory_t *directory, directory_entry_t *e, uint32_t dir_cluster) {
     if (directory->count >= MAX_NODES)
         return;
 
-    directory_node_t *n = &directory->nodes[directory->count++];
+    fat_directory_node_t *n = &directory->nodes[directory->count++];
 
     fat_to_string(e->name, n->name);
 
@@ -365,7 +362,7 @@ void add_fs_list_entry(directory_t *directory, directory_entry_t *e, uint32_t di
     n->is_dir = (e->attr & 0x10) ? 1 : 0;
 }
 
-void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out) {
+void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out) {
     out->count = 0;
     uint32_t cluster = dir_cluster;
     uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
@@ -383,9 +380,6 @@ void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out) {
             if (entries[i].name[0] == 0x00)
                 return;
 
-            if (entries[i].name[0] == 0xE5)
-                continue;
-
             if (entries[i].attr == 0x0F)
                 continue;
 
@@ -398,7 +392,7 @@ void fs_ls(fat32_disk_t *disk, uint32_t dir_cluster, directory_t *out) {
     free(buffer);
 }
 
-int fs_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name) {
+int fat_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name) {
     // Allocate cluster for new directory
     uint32_t cluster = fat_alloc_cluster(disk);
 
@@ -454,7 +448,7 @@ int fs_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name) {
     return 1;
 }
 
-int format(fat32_disk_t *fat32_disk, char *label) {
+int fat_format(fat32_disk_t *fat32_disk, char *label) {
     if (sizeof(bpb_t) != 512) {
         serial_println("BPB BAD SIZE");
 
