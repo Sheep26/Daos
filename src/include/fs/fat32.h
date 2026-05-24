@@ -138,6 +138,8 @@ fs_node_t *fat_vfs_finddir(fs_node_t *node, char *name);
 struct dirent *fat_vfs_readdir(fs_node_t *node, uint32_t index);
 uint32_t fat_vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
+int fat_vfs_ls(fs_node_t *node, fs_directory_t *out);
+
 int fat_vfs_create_file(fs_node_t *node, char *name, void *data, uint32_t size, uint16_t permission);
 int fat_vfs_mkdir(fs_node_t *node, char *name, uint16_t permission);
 

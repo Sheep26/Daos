@@ -6,7 +6,7 @@
 .set MAGIC,    0xE85250D6
 .set ARCH,     0
 
-.section .multiboot
+.section .multiboot,"a",@progbits
 .align 8
 
 .long MAGIC

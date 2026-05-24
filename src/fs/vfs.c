@@ -206,6 +206,16 @@ int rm_fs(char *name) {
 	return 0;
 }
 
+int ls_fs(char *name, fs_directory_t *out) {
+	fs_node_t *node = kopen(name, 0);
+
+	if ((node->flags & VFS_DIR) && node->ls)
+		node->ls(node, out);
+
+	free(node);
+	return 0;
+}
+
 int mkdir_fs(char *name, uint16_t permission) {
 	int32_t i = strlen(name);
 	char *dir_name = malloc(i + 1);

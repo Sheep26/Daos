@@ -16,7 +16,10 @@
 #define VFS_CHARDEVICE 0x04
 #define VFS_BLOCKDEVICE 0x08
 
+#define FS_MAX_NODES 128
+
 struct fs_node;
+struct fs_directory;
 
 typedef uint32_t (*read_type_t) (struct fs_node *, uint32_t, uint32_t, uint8_t *);
 typedef uint32_t (*write_type_t) (struct fs_node *, uint32_t, uint32_t, uint8_t *);
@@ -26,6 +29,7 @@ typedef struct dirent *(*readdir_type_t) (struct fs_node *, uint32_t);
 typedef struct fs_node *(*finddir_type_t) (struct fs_node *, char *name);
 typedef void (*create_type_t) (struct fs_node *, char *name, void *data, uint32_t size, uint16_t permission);
 typedef void (*rm_type_t) (struct fs_node *, char *name);
+typedef void (*ls_type_t) (struct fs_node *, struct fs_directory *);
 typedef void (*mkdir_type_t) (struct fs_node *, char *name, uint16_t permission);
 typedef int (*ioctl_type_t) (struct fs_node *, int request, void * argp);
 typedef int (*get_size_type_t) (struct fs_node *);
@@ -56,6 +60,7 @@ typedef struct fs_node {
 	create_type_t create;
 	mkdir_type_t mkdir;
     rm_type_t rm;
+    ls_type_t ls;
 	ioctl_type_t ioctl;
 	get_size_type_t get_size;
 
@@ -86,6 +91,17 @@ struct stat  {
 	uint32_t  __unused3;
 };
 
+typedef struct {
+    char name[16];
+    uint32_t size;
+    uint8_t is_dir;
+} fs_directory_node_t;
+
+typedef struct fs_directory {
+    fs_directory_node_t nodes[FS_MAX_NODES];
+    int count;
+} fs_directory_t;
+
 extern fs_node_t *fs_root;
 
 extern int openpty(int * master, int * slave, char * name, void * _ign0, void * size);
@@ -99,6 +115,7 @@ fs_node_t *finddir_fs(fs_node_t *node, char *name);
 int mkdir_fs(char *name, uint16_t permission);
 int create_file_fs(char *name, void *data, uint32_t size, uint16_t permission);
 int rm_fs(char *name);
+int ls_fs(char *name, fs_directory_t *out);
 fs_node_t *kopen(char *filename, uint32_t flags);
 char *canonicalize_path(char *cwd, char *input);
 fs_node_t *clone_fs(fs_node_t *source);

@@ -127,6 +127,13 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
 
         char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+
+        fs_directory_t fs_dir;
+        ls_fs("/fs/WOO", &fs_dir);
+
+        for (int i = 0; i < fs_dir.count; i++)
+            serial_println(fs_dir.nodes[i].name);
+
         // mkdir_fs("/fs/WOO", 0);
         // create_file_fs("/fs/WOO/itworkie.txt", wooo, sizeof(wooo), 0);
         // rm_fs("/fs/WOO/Aweso");
@@ -145,20 +152,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
             close_fs(file);
             free(file);
-        }
-
-        // fat_format(&fat32_disk0, "Rahh");
-        // fat_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
-        // fat_mkdir(&fat32_disk0, fat32_disk0.bpb->root_cluster, "WOO");
-
-        fat_directory_t dir;
-
-        fat_ls(&fat32_disk0, fat32_disk0.bpb->root_cluster, &dir);
-
-        for (int i = 0; i < dir.count; i++) {
-            // serial_println(dir.nodes[i].name);
-            /* if (dir.nodes[i].is_dir)
-                fat_write_file(&fat32_disk0, "Wooo2.txt", wooo, sizeof(wooo), dir.nodes[i].cluster); */
         }
 
         fillscreen(0x00000000);

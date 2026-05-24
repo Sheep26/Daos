@@ -409,7 +409,7 @@ void fat_to_string(char raw[11], char *out) {
     out[j] = '\0';
 }
 
-void add_fs_list_entry(fat_directory_t *directory, directory_entry_t *e, uint32_t dir_cluster) {
+void add_fat_dir_list_entry(fat_directory_t *directory, directory_entry_t *e, uint32_t dir_cluster) {
     if (directory->count >= MAX_NODES)
         return;
 
@@ -441,10 +441,10 @@ void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out) {
             if (entries[i].name[0] == 0x00)
                 return;
 
-            if (entries[i].name[0] == 0xE5 || entries[i].attr == 0x0F)
+            if (entries[i].name[0] == 0xE5 || entries[i].attr == 0x0F || entries[i].name[0] < 0x20)
                 continue;
 
-            add_fs_list_entry(out, &entries[i], dir_cluster);
+            add_fat_dir_list_entry(out, &entries[i], dir_cluster);
         }
 
         cluster = disk->fat[cluster];
@@ -694,6 +694,7 @@ fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name) {
     fnode->create = fat_vfs_create_file;
     fnode->rm = fat_vfs_rm;
     fnode->mkdir = fat_vfs_mkdir;
+    fnode->ls = fat_vfs_ls;
 	fnode->ioctl = NULL;
     
     fat_node_t *fatnode = malloc(sizeof(fat_node_t));
@@ -743,6 +744,7 @@ fs_node_t *fat_vfs_finddir(fs_node_t *node, char *name) {
         out->create = fat_vfs_create_file;
         out->rm = fat_vfs_rm;
         out->mkdir = fat_vfs_mkdir;
+        out->ls = fat_vfs_ls;
     } else {
         out->read = fat_vfs_read;
     }
@@ -836,4 +838,28 @@ int fat_vfs_rm(fs_node_t *node, char *name) {
         return 0;
 
     return fat_delete_file(fatnode->disk, fatnode->cluster, name);
+}
+
+void add_fs_dir_list_entry(fat_directory_node_t *node, fs_directory_t *directory) {
+    if (directory->count >= MAX_NODES)
+        return;
+
+    fs_directory_node_t *n = &directory->nodes[directory->count++];
+
+    strcpy(n->name, node->name);
+    n->size = node->size;
+    n->is_dir = node->is_dir;
+}
+
+int fat_vfs_ls(fs_node_t *node, fs_directory_t *out) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    fat_directory_t dir;
+
+    fat_ls(fatnode->disk, fatnode->cluster, &dir);
+
+    for (int i = 0; i < dir.count; i++)
+        add_fs_dir_list_entry(&dir.nodes[i], out);
+    
+    return 1;
 }
