@@ -1,0 +1,606 @@
+/* vim: shiftwidth=4 tabstop=4 noexpandtab
+ *
+ * Virtual File System
+ *
+ */
+#include <fs/vfs.h>
+
+tree_t *fs_tree = NULL; /* File system mountpoint tree */
+fs_node_t *fs_root = NULL; /* Pointer to the root mount fs_node (must be some form of filesystem, even ramdisk) */
+
+/**
+ * read_fs: Read a file system node based on its underlying type.
+ *
+ * @param node    Node to read
+ * @param offset  Offset into the node data to read from
+ * @param size    How much data to read (in bytes)
+ * @param buffer  A buffer to copy of the read data into
+ * @returns Bytes read
+ */
+uint32_t read_fs(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+	if (node->read) {
+		uint32_t ret = node->read(node, offset, size, buffer);
+		return ret;
+	} else {
+		return 0;
+	}
+}
+
+/**
+ * write_fs: Write a file system node based on its underlying type.
+ *
+ * @param node    Node to write to
+ * @param offset  Offset into the node data to write to
+ * @param size    How much data to write (in bytes)
+ * @param buffer  A buffer to copy from
+ * @returns Bytes written
+ */
+uint32_t write_fs(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+	if (node->write) {
+		uint32_t ret = node->write(node, offset, size, buffer);
+		return ret;
+	} else {
+		return 0;
+	}
+}
+
+/**
+ * open_fs: Open a file system node.
+ *
+ * @param node  Node to open
+ * @param read  Read permission? (1 = yes)
+ * @param write Write permission? (1 = overwrite, 2 = append)
+ */
+void open_fs(fs_node_t *node, uint8_t read, uint8_t write) {
+	if (node->open) {
+		node->open(node, read, write);
+	}
+}
+
+/**
+ * close_fs: Close a file system node
+ *
+ * @param node Node to close
+ */
+void close_fs(fs_node_t *node) {
+	if (node->close && node != fs_root)
+		node->close(node);
+}
+
+/**
+ * readdir_fs: Read a directory for the requested index
+ *
+ * @param node  Directory to read
+ * @param index Offset to look for
+ * @returns A dirent object.
+ */
+struct dirent *readdir_fs(fs_node_t *node, uint32_t index) {
+	if ((node->flags & VFS_DIR) && node->readdir) {
+		struct dirent *ret = node->readdir(node, index);
+		return ret;
+	} else {
+		return (struct dirent *)NULL;
+	}
+}
+
+/**
+ * finddir_fs: Find the requested file in the directory and return an fs_node for it
+ *
+ * @param node Directory to search
+ * @param name File to look for
+ * @returns An fs_node that the caller can free
+ */
+fs_node_t *finddir_fs(fs_node_t *node, char *name) {
+	if ((node->flags & VFS_DIR) && node->finddir) {
+		fs_node_t *ret = node->finddir(node, name);
+		return ret;
+	} else
+		return (fs_node_t *)NULL;
+}
+
+/**
+ * ioctl_fs: Control Device
+ *
+ * @param node    Device node to control
+ * @param request Device-specific request code
+ * @param argp    Depends on `request`
+ * @returns Depends on `request`
+ */
+int ioctl_fs(fs_node_t *node, int request, void * argp) {
+	if (node->ioctl) {
+		return node->ioctl(node, request, argp);
+	} else {
+		return -1; /* TODO Should actually be ENOTTY, but we're bad at error numbers */
+	}
+}
+
+
+/*
+ * XXX: The following two function should be replaced with
+ *      one function to create children of directory nodes.
+ *      There is no fundamental difference between a directory
+ *      and a file, thus, the use of flag sets should suffice
+ */
+
+int create_file_fs(char *name, uint16_t permission) {
+	int32_t i = strlen(name);
+	char *dir_name = malloc(i + 1);
+	memcpy(dir_name, name, i);
+	dir_name[i] = '\0';
+	if (dir_name[i - 1] == '/')
+		dir_name[i - 1] = '\0';
+	if (strlen(dir_name) == 0) {
+		free(dir_name);
+		return 1;
+	}
+	for (i = strlen(dir_name) - 1; i >= 0; i--) {
+		if (dir_name[i] == '/') {
+			dir_name[i] = '\0';
+			break;
+		}
+	}
+
+	// get the parent dir node.
+	fs_node_t *node;
+	if (i >= 0) {
+		node = kopen(dir_name, 0);
+	} else {
+		/* XXX This is wrong */
+		node = kopen(".", 0);
+	}
+
+	if (node == NULL) {
+		free(dir_name);
+		return 2;
+	}
+
+	i++;
+	if ((node->flags & VFS_DIR) && node->mkdir) {
+		node->create(node, dir_name + i, permission);
+	}
+
+	free(node);
+	free(dir_name);
+	return 0;
+}
+
+int mkdir_fs(char *name, uint16_t permission) {
+	int32_t i = strlen(name);
+	char *dir_name = malloc(i + 1);
+	memcpy(dir_name, name, i);
+	dir_name[i] = '\0';
+	if (dir_name[i - 1] == '/')
+		dir_name[i - 1] = '\0';
+	if (strlen(dir_name) == 0) {
+		free(dir_name);
+		return 1;
+	}
+	for (i = strlen(dir_name) - 1; i >= 0; i--) {
+		if (dir_name[i] == '/') {
+			dir_name[i] = '\0';
+			break;
+		}
+	}
+
+	// get the parent dir node.
+	fs_node_t *node;
+	if (i >= 0) {
+		node = kopen(dir_name, 0);
+	} else {
+		node = kopen(".", 0);
+	}
+
+	if (node == NULL) {
+		free(dir_name);
+		return 1;
+	}
+
+	i++;
+	if ((node->flags & VFS_DIR) && node->mkdir) {
+		node->mkdir(node, dir_name + i, permission);
+	}
+
+	free(node);
+	free(dir_name);
+
+	return 0;
+}
+
+fs_node_t *clone_fs(fs_node_t *source) {
+	if (!source) {
+		return NULL;
+	}
+	fs_node_t *n = malloc(sizeof(fs_node_t));
+	memcpy(n, source, sizeof(fs_node_t));
+	return n;
+}
+
+/**
+ * canonicalize_path: Canonicalize a path.
+ *
+ * @param cwd   Current working directory
+ * @param input Path to append or canonicalize on
+ * @returns An absolute path string
+ */
+char *canonicalize_path(char *cwd, char *input) {
+	/* This is a stack-based canonicalizer; we use a list as a stack */
+	list_t *out = list_create();
+
+	/*
+	 * If we have a relative path, we need to canonicalize
+	 * the working directory and insert it into the stack.
+	 */
+	if (strlen(input) && input[0] != PATH_SEPARATOR) {
+		/* Make a copy of the working directory */
+		char *path = malloc((strlen(cwd) + 1) * sizeof(char));
+		memcpy(path, cwd, strlen(cwd) + 1);
+
+		/* Setup tokenizer */
+		char *pch;
+		char *save;
+		pch = strtok_r(path,PATH_SEPARATOR_STRING,&save);
+
+		/* Start tokenizing */
+		while (pch != NULL) {
+			/* Make copies of the path elements */
+			char *s = malloc(sizeof(char) * (strlen(pch) + 1));
+			memcpy(s, pch, strlen(pch) + 1);
+			/* And push them */
+			list_insert(out, s);
+			pch = strtok_r(NULL,PATH_SEPARATOR_STRING,&save);
+		}
+		free(path);
+	}
+
+	/* Similarly, we need to push the elements from the new path */
+	char *path = malloc((strlen(input) + 1) * sizeof(char));
+	memcpy(path, input, strlen(input) + 1);
+
+	/* Initialize the tokenizer... */
+	char *pch;
+	char *save;
+	pch = strtok_r(path,PATH_SEPARATOR_STRING,&save);
+
+	/*
+	 * Tokenize the path, this time, taking care to properly
+	 * handle .. and . to represent up (stack pop) and current
+	 * (do nothing)
+	 */
+	while (pch != NULL) {
+		if (!strcmp(pch,PATH_UP)) {
+			/*
+			 * Path = ..
+			 * Pop the stack to move up a directory
+			 */
+			node_t * n = list_pop(out);
+			if (n) {
+				free(n->value);
+				free(n);
+			}
+		} else if (!strcmp(pch,PATH_DOT)) {
+			/*
+			 * Path = .
+			 * Do nothing
+			 */
+		} else {
+			/*
+			 * Regular path, push it
+			 * XXX: Path elements should be checked for existence!
+			 */
+			char * s = malloc(sizeof(char) * (strlen(pch) + 1));
+			memcpy(s, pch, strlen(pch) + 1);
+			list_insert(out, s);
+		}
+		pch = strtok_r(NULL, PATH_SEPARATOR_STRING, &save);
+	}
+	free(path);
+
+	/* Calculate the size of the path string */
+	size_t size = 0;
+	foreach(item, out) {
+		/* Helpful use of our foreach macro. */
+		size += strlen(item->value) + 1;
+	}
+
+	/* join() the list */
+	char *output = malloc(sizeof(char) * (size + 1));
+	char *output_offset = output;
+	if (size == 0) {
+		/*
+		 * If the path is empty, we take this to mean the root
+		 * thus we synthesize a path of "/" to return.
+		 */
+		output = realloc(output, sizeof(char) * 2);
+		output[0] = PATH_SEPARATOR;
+		output[1] = '\0';
+	} else {
+		/* Otherwise, append each element together */
+		foreach(item, out) {
+			output_offset[0] = PATH_SEPARATOR;
+			output_offset++;
+			memcpy(output_offset, item->value, strlen(item->value) + 1);
+			output_offset += strlen(item->value);
+		}
+	}
+
+	/* Clean up the various things we used to get here */
+	list_destroy(out);
+	list_free(out);
+	free(out);
+
+	/* And return a working, absolute path */
+	return output;
+}
+
+struct vfs_entry {
+	char * name;
+	fs_node_t * file; /* Or null */
+};
+
+void vfs_install() {
+	/* Initialize the mountpoint tree */
+	fs_tree = tree_create();
+
+	struct vfs_entry * root = malloc(sizeof(struct vfs_entry));
+
+	root->name = strdup("[root]");
+	root->file = NULL; /* Nothing mounted as root */
+
+	tree_set_root(fs_tree, root);
+}
+
+void vfs_init() {
+    vfs_install();
+
+    fs_node_t *root = malloc(sizeof(fs_node_t));
+    memset(root, 0, sizeof(fs_node_t));
+
+    strcpy(root->name, "/");
+    root->flags = VFS_DIR;
+
+    vfs_mount("/", root);
+    fs_root = root;
+}
+
+/**
+ * vfs_mount - Mount a file system to the specified path.
+ *
+ * For example, if we have an EXT2 filesystem with a root node
+ * of ext2_root and we want to mount it to /, we would run
+ * vfs_mount("/", ext2_root); - or, if we have a procfs node,
+ * we could mount that to /dev/procfs. Individual files can also
+ * be mounted.
+ *
+ * Paths here must be absolute.
+ */
+int vfs_mount(char *path, fs_node_t *local_root) {
+	if (!fs_tree)
+		return 1;
+    
+	if (!path || path[0] != PATH_SEPARATOR)
+		return 2;
+
+	int ret_val = 0;
+
+	char *p = strdup(path);
+	char *i = p;
+
+	int path_len = strlen(p);
+
+	/* Chop the path up */
+	while (i < p + path_len) {
+		if (*i == PATH_SEPARATOR) {
+			*i = '\0';
+		}
+		i++;
+	}
+	/* Clean up */
+	p[path_len] = '\0';
+	i = p + 1;
+
+	/* Root */
+	tree_node_t *root_node = fs_tree->root;
+
+	if (*i == '\0') {
+		/* Special case, we're trying to set the root node */
+		struct vfs_entry * root = (struct vfs_entry *)root_node->value;
+		if (root->file) {
+			ret_val = 3;
+			goto _vfs_cleanup;
+		}
+
+		root->file = local_root;
+		/* We also keep a legacy shortcut around for that */
+		fs_root = local_root;
+	} else {
+		tree_node_t * node = root_node;
+		char * at = i;
+		while (1) {
+			if (at >= p + path_len) {
+				break;
+			}
+			int found = 0;
+
+			foreach(child, node->children) {
+				tree_node_t * tchild = (tree_node_t *)child->value;
+				struct vfs_entry * ent = (struct vfs_entry *)tchild->value;
+				if (!strcmp(ent->name, at)) {
+					found = 1;
+					node = tchild;
+					break;
+				}
+			}
+
+			if (!found) {
+				struct vfs_entry * ent = malloc(sizeof(struct vfs_entry));
+				ent->name = strdup(at);
+				ent->file = NULL;
+				node = tree_node_insert_child(fs_tree, node, ent);
+			}
+
+			at = at + strlen(at) + 1;
+		}
+		struct vfs_entry * ent = (struct vfs_entry *)node->value;
+		if (ent->file) {
+			ret_val = 3;
+			goto _vfs_cleanup;
+		}
+		ent->file = local_root;
+	}
+
+_vfs_cleanup:
+	free(p);
+	return ret_val;
+}
+
+/**
+ * get_mount_point
+ *
+ */
+fs_node_t *get_mount_point(char * path, unsigned int path_depth, char **outpath, unsigned int * outdepth) {
+	size_t depth;
+
+	for (depth = 0; depth <= path_depth; ++depth) {
+		path += strlen(path) + 1;
+	}
+
+	/* Last available node */
+	fs_node_t   * last = fs_root;
+	tree_node_t * node = fs_tree->root;
+
+	char * at = *outpath;
+	int _depth = 1;
+	int _tree_depth = 0;
+
+	while (1) {
+		if (at >= path) {
+			break;
+		}
+		int found = 0;
+
+		foreach(child, node->children) {
+			tree_node_t * tchild = (tree_node_t *)child->value;
+			struct vfs_entry * ent = (struct vfs_entry *)tchild->value;
+			if (!strcmp(ent->name, at)) {
+				found = 1;
+				node = tchild;
+				at = at + strlen(at) + 1;
+				if (ent->file) {
+					_tree_depth = _depth;
+					last = ent->file;
+					*outpath = at;
+				}
+				break;
+			}
+		}
+		if (!found) {
+			break;
+		}
+		_depth++;
+	}
+
+	*outdepth = _tree_depth;
+
+	return last;
+}
+
+
+
+
+
+/**
+ * kopen: Open a file by name.
+ *
+ * Explore the file system tree to find the appropriate node for
+ * for a given path. The path can be relative to the working directory
+ * and will be canonicalized by the kernel.
+ *
+ * @param filename Filename to open
+ * @param flags    Flag bits for read/write mode.
+ * @returns A file system node element that the caller can free.
+ */
+fs_node_t *kopen(char *filename, uint32_t flags) {
+	/* Simple sanity checks that we actually have a file system */
+	if (!fs_root || !filename)
+		return NULL;
+
+	/* Reference the current working directory */
+	char *cwd = "/";
+	/* Canonicalize the (potentially relative) path... */
+	char *path = canonicalize_path(cwd, filename);
+	/* And store the length once to save recalculations */
+	size_t path_len = strlen(path);
+
+	/* If strlen(path) == 1, then path = "/"; return root */
+	if (path_len == 1) {
+		/* Clone the root file system node */
+		fs_node_t *root_clone = malloc(sizeof(fs_node_t));
+		memcpy(root_clone, fs_root, sizeof(fs_node_t));
+
+		/* Free the path */
+		free(path);
+
+		/* And return the clone */
+		return root_clone;
+	}
+
+	/* Otherwise, we need to break the path up and start searching */
+	char *path_offset = path;
+	uint32_t path_depth = 0;
+	while (path_offset < path + path_len) {
+		/* Find each PATH_SEPARATOR */
+		if (*path_offset == PATH_SEPARATOR) {
+			*path_offset = '\0';
+			path_depth++;
+		}
+		path_offset++;
+	}
+	/* Clean up */
+	path[path_len] = '\0';
+	path_offset = path + 1;
+
+	/*
+	 * At this point, the path is tokenized and path_offset points
+	 * to the first token (directory) and path_depth is the number
+	 * of directories in the path
+	 */
+
+	/*
+	 * Dig through the (real) tree to find the file
+	 */
+	uint32_t depth = 0;
+	fs_node_t *node_ptr = malloc(sizeof(fs_node_t));
+	/* Find the mountpoint for this file */
+	fs_node_t *mount_point = get_mount_point(path, path_depth, &path_offset, &depth);
+
+	if (path_offset >= path+path_len) {
+		free(path);
+		return mount_point;
+	}
+	/* Set the active directory to the mountpoint */
+	memcpy(node_ptr, mount_point, sizeof(fs_node_t));
+	fs_node_t *node_next = NULL;
+	for (; depth < path_depth; ++depth) {
+		/* Search the active directory for the requested directory */
+		node_next = finddir_fs(node_ptr, path_offset);
+		free(node_ptr);
+		node_ptr = node_next;
+		if (!node_ptr) {
+			/* We failed to find the requested directory */
+			free((void *)path);
+
+			return NULL;
+		} else if (depth == path_depth - 1) {
+			/* We found the file and are done, open the node */
+			open_fs(node_ptr, 1, 0);
+			free((void *)path);
+
+			return node_ptr;
+		}
+		/* We are still searching... */
+		path_offset += strlen(path_offset) + 1;
+	}
+	/* We failed to find the requested file, but our loop terminated. */
+	free((void *)path);
+	return NULL;
+}

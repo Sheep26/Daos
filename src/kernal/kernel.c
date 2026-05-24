@@ -9,6 +9,8 @@
 #include <font/font.h>
 #include <drivers/ata.h>
 #include <fs/fat32.h>
+#include <fs/vfs.h>
+#include <fs/nulldev.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -113,6 +115,24 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
+    vfs_init();
+
+    vfs_mount("/dev/null", null_device_create());
+    fs_node_t *node = kopen("/dev/null", 0);
+
+    if (node) {
+        uint8_t read_buf[16];
+
+        uint32_t n = read_fs(node, 0, sizeof(buf), read_buf);
+
+        serial_print("Data: ");
+        itoa(read_buf[0], buf, 10);
+        serial_println(buf);
+
+        close_fs(node);
+        free(node);
+    }
+
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
     int ata0_indenify = ata_identify(&ata0);
 
@@ -132,7 +152,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         fat_ls(&fat32_disk0, fat32_disk0.bpb->root_cluster, &dir);
 
         for (int i = 0; i < dir.count; i++) {
-            serial_println(dir.nodes[i].name);
+            // serial_println(dir.nodes[i].name);
             /* if (dir.nodes[i].is_dir)
                 fat_write_file(&fat32_disk0, "Wooo2.txt", wooo, sizeof(wooo), dir.nodes[i].cluster); */
         }
