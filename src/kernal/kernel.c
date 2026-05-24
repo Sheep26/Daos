@@ -123,22 +123,32 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     int ata0_indenify = ata_identify(&ata0);
 
     if (ata0_indenify) {
-        fat_disk_init(&fat32_disk0, &ata0);
+        if (!fat_disk_init(&fat32_disk0, &ata0))
+            fat_format(&fat32_disk0, "Disk");
+        
         vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
 
         char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
         fs_directory_t fs_dir;
-        ls_fs("/fs/WOO", &fs_dir);
+        ls_fs("/fs", &fs_dir);
 
         for (int i = 0; i < fs_dir.count; i++)
             serial_println(fs_dir.nodes[i].name);
 
         // mkdir_fs("/fs/WOO", 0);
-        // create_file_fs("/fs/WOO/itworkie.txt", wooo, sizeof(wooo), 0);
+
+        fs_node_t *file = kopen("/fs/itworkie.txt", 0);
+
+        if (!file)
+            create_file_fs("/fs/itworkie.txt", wooo, sizeof(wooo), 0);
+
+        close_fs(file);
+        free(file);
+
         // rm_fs("/fs/WOO/Aweso");
 
-        fs_node_t *file = kopen("/fs/Wooo.txt", 0);
+        file = kopen("/fs/itworkie.txt", 0);
 
         if (file && (file->flags & VFS_FILE)) {
             char *read_buf = malloc(file->length + 1);

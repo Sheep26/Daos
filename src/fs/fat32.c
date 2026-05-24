@@ -197,29 +197,33 @@ int fat_load(fat32_disk_t *fat32_disk) {
     return 1;
 }
 
-void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
+int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     fat32_disk->ata = ata;
 
     uint8_t sector[512];
 
-    if (!read_sectors(0, 1, (uint16_t*)sector, ata)) {
+    if (!read_sectors(0, 1, (uint16_t*) sector, ata)) {
         serial_print("Drive: ATA");
-
         char buf[32];
         itoa(fat32_disk->ata->identifier, buf, 10);
 
-        serial_print(buf);
+        serial_println(buf);
         serial_println("Failed to read boot sector");
 
-        return;
+        return 0;
     }
 
     fat32_disk->bpb = malloc(sizeof(bpb_t));
 
     if (!fat32_disk->bpb) {
+        serial_print("Drive: ATA");
+        char buf[32];
+        itoa(fat32_disk->ata->identifier, buf, 10);
+
+        serial_println(buf);
         serial_println("Failed to allocate BPB");
 
-        return;
+        return 0;
     }
 
     // Copy bpb from sector.
@@ -227,31 +231,41 @@ void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
 
     // Validate.
     if (fat32_disk->bpb->signature != 0xAA55) {
+        serial_print("Drive: ATA");
+        char buf[32];
+        itoa(fat32_disk->ata->identifier, buf, 10);
+
+        serial_println(buf);
         serial_println("Invalid FAT32 signature");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
 
-        return;
+        return 0;
     }
 
     if (fat32_disk->bpb->sectors_per_fat_32 == 0) {
+        serial_print("Drive: ATA");
+        char buf[32];
+        itoa(fat32_disk->ata->identifier, buf, 10);
+
+        serial_println(buf);
         serial_println("Not a FAT32 filesystem");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
 
-        return;
+        return 0;
     }
 
-    fat_init(fat32_disk);
+    return fat_init(fat32_disk);
 }
 
-void fat_init(fat32_disk_t *fat32_disk) {
+int fat_init(fat32_disk_t *fat32_disk) {
     fat32_disk->fat_start = fat32_disk->bpb->reserved_sectors;
     fat32_disk->fat_sectors = fat32_disk->bpb->sectors_per_fat_32;
 
-    fat_load(fat32_disk);
+    return fat_load(fat32_disk);
 }
 
 uint32_t fat_find_free(uint32_t *fat, uint32_t total_clusters) {

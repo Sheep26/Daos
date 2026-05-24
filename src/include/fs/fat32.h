@@ -114,8 +114,8 @@ typedef struct {
 } fat_node_t;
 
 int fat_load(fat32_disk_t *fat32_disk);
-void fat_init(fat32_disk_t *fat32_disk);
-void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata);
+int fat_init(fat32_disk_t *fat32_disk);
+int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata);
 void fat_flush(fat32_disk_t *fat32_disk);
 
 int fat_format(fat32_disk_t *fat32_disk, char *label);
