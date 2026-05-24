@@ -56,7 +56,7 @@ int find_dir_slot(fat32_disk_t *fat32_disk, directory_entry_t *entries) {
     int total = (fat32_disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t);
 
     for (int i = 0; i < total; i++)
-        if (entries[i].name[0] == 0x00)
+        if (entries[i].name[0] == 0x00 || entries[i].name[0] == 0xE5)
             return i;
 
     return -1;
@@ -96,33 +96,47 @@ int create_directory_entry(fat32_disk_t* fat32_disk, uint32_t dir_cluster, char 
 }
 
 int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, directory_entry_t *out) {
-    uint32_t lba = cluster_to_lba(disk, dir_cluster);
-
-    uint8_t *sector = malloc(disk->bpb->sectors_per_cluster * 512);
-
-    read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)sector, disk->ata);
-
-    directory_entry_t *entries = (directory_entry_t*)sector;
-
     char formatted[11];
     fat_format_name(name, formatted);
 
-    for (uint32_t i = 0; i < (disk->bpb->sectors_per_cluster * 512) / sizeof(directory_entry_t); i++) {
-        if (entries[i].name[0] == 0x00)
-            break;
+    uint32_t cluster = dir_cluster;
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
 
-        if (memcmp(entries[i].name, formatted, 11) == 0) {
-            if (entries[i].attr == 0x0F) // Deleted files
+    uint8_t *buffer = malloc(cluster_size);
+
+    if (!buffer)
+        return 0;
+
+    while (cluster < 0x0FFFFFF8 && cluster != 0) {
+        read_cluster(disk, cluster, buffer);
+
+        directory_entry_t *entries = (directory_entry_t *)buffer;
+        int count = cluster_size / sizeof(directory_entry_t);
+
+        for (int i = 0; i < count; i++) {
+            uint8_t first = entries[i].name[0];
+
+            if (first == 0x00)
+                goto done;
+
+            if (first == 0xE5)
                 continue;
 
-            *out = entries[i];
+            if (entries[i].attr == 0x0F)
+                continue;
 
-            free(sector);
-            return 1;
+            if (memcmp(entries[i].name, formatted, 11) == 0) {
+                *out = entries[i];
+                free(buffer);
+                return 1;
+            }
         }
+
+        cluster = disk->fat[cluster];
     }
 
-    free(sector);
+done:
+    free(buffer);
     return 0;
 }
 
@@ -141,7 +155,7 @@ uint32_t fat_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
     return e.size;
 }
 
-uint32_t fat_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster) {
+uint32_t fat_file_exists(fat32_disk_t *disk, uint32_t dir_cluster, char *name) {
     directory_entry_t e;
 
     return fat_find_file(disk, dir_cluster, name, &e);
@@ -255,6 +269,53 @@ uint32_t fat_alloc_cluster(fat32_disk_t* fat32_disk) {
         if (fat32_disk->fat[i] == 0x00000000)
             return i;
 
+    return 0;
+}
+
+void fat_free_chain(fat32_disk_t *disk, uint32_t cluster) {
+    while (cluster < 0x0FFFFFF8 && cluster != 0) {
+        uint32_t next = disk->fat[cluster];
+
+        disk->fat[cluster] = 0x00000000;
+        cluster = next;
+    }
+}
+
+int fat_delete_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name) {
+    uint32_t lba = cluster_to_lba(disk, dir_cluster);
+
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
+
+    uint8_t *sector = malloc(cluster_size);
+    read_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)sector, disk->ata);
+
+    directory_entry_t *entries = (directory_entry_t*)sector;
+
+    char formatted[11];
+    fat_format_name(name, formatted);
+
+    int count = cluster_size / sizeof(directory_entry_t);
+
+    for (int i = 0; i < count; i++) {
+        if (entries[i].name[0] == 0x00)
+            break;
+
+        if (memcmp(entries[i].name, formatted, 11) == 0) {
+            uint32_t cluster = (entries[i].first_cluster_high << 16) | entries[i].first_cluster_low;
+            fat_free_chain(disk, cluster);
+
+            entries[i].name[0] = 0xE5;
+
+            write_sectors(lba, disk->bpb->sectors_per_cluster, (uint16_t*)sector, disk->ata);
+
+            fat_flush(disk);
+
+            free(sector);
+            return 1;
+        }
+    }
+
+    free(sector);
     return 0;
 }
 
@@ -372,7 +433,7 @@ void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out) {
     while (cluster < 0x0FFFFFF8 && cluster != 0) {
         read_cluster(disk, cluster, buffer);
 
-        directory_entry_t *entries = (directory_entry_t *)buffer;
+        directory_entry_t *entries = (directory_entry_t*) buffer;
 
         int count = cluster_size / sizeof(directory_entry_t);
 
@@ -380,7 +441,7 @@ void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out) {
             if (entries[i].name[0] == 0x00)
                 return;
 
-            if (entries[i].attr == 0x0F)
+            if (entries[i].name[0] == 0xE5 || entries[i].attr == 0x0F)
                 continue;
 
             add_fs_list_entry(out, &entries[i], dir_cluster);
@@ -628,8 +689,11 @@ fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name) {
 	fnode->write = NULL;
 	fnode->open = NULL;
 	fnode->close = NULL;
-	fnode->readdir = fat_readdir;
-	fnode->finddir = fat_finddir;
+	fnode->readdir = fat_vfs_readdir;
+	fnode->finddir = fat_vfs_finddir;
+    fnode->create = fat_vfs_create_file;
+    fnode->rm = fat_vfs_rm;
+    fnode->mkdir = fat_vfs_mkdir;
 	fnode->ioctl = NULL;
     
     fat_node_t *fatnode = malloc(sizeof(fat_node_t));
@@ -643,7 +707,7 @@ fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name) {
 	return fnode;
 }
 
-fs_node_t *fat_finddir(fs_node_t *node, char *name) {
+fs_node_t *fat_vfs_finddir(fs_node_t *node, char *name) {
     fat_node_t *fatnode = (fat_node_t *) node->device;
 
     directory_entry_t entry;
@@ -674,16 +738,19 @@ fs_node_t *fat_finddir(fs_node_t *node, char *name) {
     out->length = entry.size;
 
     if (out->flags & VFS_DIR) {
-        out->finddir = fat_finddir;
-        out->readdir = fat_readdir;
+        out->finddir = fat_vfs_finddir;
+        out->readdir = fat_vfs_readdir;
+        out->create = fat_vfs_create_file;
+        out->rm = fat_vfs_rm;
+        out->mkdir = fat_vfs_mkdir;
     } else {
-        out->read = fat_read;
+        out->read = fat_vfs_read;
     }
 
     return out;
 }
 
-struct dirent *fat_readdir(fs_node_t *node, uint32_t index) {
+struct dirent *fat_vfs_readdir(fs_node_t *node, uint32_t index) {
     fat_node_t *fatnode = (fat_node_t *) node->device;
 
     fat_directory_t dir;
@@ -704,8 +771,8 @@ struct dirent *fat_readdir(fs_node_t *node, uint32_t index) {
     return d;
 }
 
-uint32_t fat_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
-    fat_node_t *fatnode = (fat_node_t *)node->device;
+uint32_t fat_vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
 
     uint32_t cluster = fatnode->cluster;
     fat32_disk_t *disk = fatnode->disk;
@@ -742,4 +809,31 @@ uint32_t fat_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buff
     free(tmp);
 
     return size;
+}
+
+int fat_vfs_create_file(fs_node_t *node, char *name, void *data, uint32_t size, uint16_t permission) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    if (fat_file_exists(fatnode->disk, fatnode->cluster, name))
+        return 0;
+
+    return fat_write_file(fatnode->disk, name, data, size, fatnode->cluster);
+}
+
+int fat_vfs_mkdir(fs_node_t *node, char *name, uint16_t permission) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    if (fat_file_exists(fatnode->disk, fatnode->cluster, name))
+        return 0;
+
+    return fat_mkdir(fatnode->disk, fatnode->cluster, name);
+}
+
+int fat_vfs_rm(fs_node_t *node, char *name) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    if (!fat_file_exists(fatnode->disk, fatnode->cluster, name))
+        return 0;
+
+    return fat_delete_file(fatnode->disk, fatnode->cluster, name);
 }

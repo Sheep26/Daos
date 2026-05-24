@@ -124,15 +124,23 @@ int fat_write_file(fat32_disk_t *fat32_disk, char *name, void *data, uint32_t si
 
 uint32_t fat_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_t dir_cluster);
 uint32_t fat_file_size(fat32_disk_t *disk, char *name, uint32_t dir_cluster);
-uint32_t fat_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster);
+uint32_t fat_file_exists(fat32_disk_t *disk, uint32_t dir_cluster, char *name);
 
 int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, directory_entry_t *out);
 void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out);
 int fat_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name);
 
+int fat_delete_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name);
+
 fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name);
-fs_node_t *fat_finddir(fs_node_t *node, char *name);
-struct dirent *fat_readdir(fs_node_t *node, uint32_t index);
-uint32_t fat_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
+
+fs_node_t *fat_vfs_finddir(fs_node_t *node, char *name);
+struct dirent *fat_vfs_readdir(fs_node_t *node, uint32_t index);
+uint32_t fat_vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
+
+int fat_vfs_create_file(fs_node_t *node, char *name, void *data, uint32_t size, uint16_t permission);
+int fat_vfs_mkdir(fs_node_t *node, char *name, uint16_t permission);
+
+int fat_vfs_rm(fs_node_t *node, char *name);
 
 #endif

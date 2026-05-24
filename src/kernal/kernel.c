@@ -126,7 +126,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         fat_disk_init(&fat32_disk0, &ata0);
         vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
 
-        fs_node_t *file = kopen("/fs/WOO/Wooo.txt", 0);
+        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+        // mkdir_fs("/fs/WOO", 0);
+        // create_file_fs("/fs/WOO/itworkie.txt", wooo, sizeof(wooo), 0);
+        // rm_fs("/fs/WOO/Aweso");
+
+        fs_node_t *file = kopen("/fs/Wooo.txt", 0);
 
         if (file) {
             char *read_buf = malloc(file->length + 1);
@@ -141,12 +146,10 @@ void kernel_main(uint32_t magic, uint32_t addr) {
             close_fs(file);
             free(file);
         }
-        
-        // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+
         // fat_format(&fat32_disk0, "Rahh");
         // fat_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
         // fat_mkdir(&fat32_disk0, fat32_disk0.bpb->root_cluster, "WOO");
-        
 
         fat_directory_t dir;
 

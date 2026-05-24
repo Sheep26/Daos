@@ -122,7 +122,7 @@ int ioctl_fs(fs_node_t *node, int request, void * argp) {
  *      and a file, thus, the use of flag sets should suffice
  */
 
-int create_file_fs(char *name, uint16_t permission) {
+int create_file_fs(char *name, void *data, uint32_t size, uint16_t permission) {
 	int32_t i = strlen(name);
 	char *dir_name = malloc(i + 1);
 	memcpy(dir_name, name, i);
@@ -155,8 +155,50 @@ int create_file_fs(char *name, uint16_t permission) {
 	}
 
 	i++;
-	if ((node->flags & VFS_DIR) && node->mkdir) {
-		node->create(node, dir_name + i, permission);
+	if ((node->flags & VFS_DIR) && /*node->mkdir*/ node->create) {
+		node->create(node, dir_name + i, data, size, permission);
+	}
+
+	free(node);
+	free(dir_name);
+	return 0;
+}
+
+int rm_fs(char *name) {
+	int32_t i = strlen(name);
+	char *dir_name = malloc(i + 1);
+	memcpy(dir_name, name, i);
+	dir_name[i] = '\0';
+	if (dir_name[i - 1] == '/')
+		dir_name[i - 1] = '\0';
+	if (strlen(dir_name) == 0) {
+		free(dir_name);
+		return 1;
+	}
+	for (i = strlen(dir_name) - 1; i >= 0; i--) {
+		if (dir_name[i] == '/') {
+			dir_name[i] = '\0';
+			break;
+		}
+	}
+
+	// get the parent dir node.
+	fs_node_t *node;
+	if (i >= 0) {
+		node = kopen(dir_name, 0);
+	} else {
+		/* XXX This is wrong */
+		node = kopen(".", 0);
+	}
+
+	if (node == NULL) {
+		free(dir_name);
+		return 2;
+	}
+
+	i++;
+	if ((node->flags & VFS_DIR) && /*node->mkdir*/ node->rm) {
+		node->rm(node, dir_name + i);
 	}
 
 	free(node);

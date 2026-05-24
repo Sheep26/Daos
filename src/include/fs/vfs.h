@@ -24,7 +24,8 @@ typedef void (*open_type_t) (struct fs_node *, uint8_t read, uint8_t write);
 typedef void (*close_type_t) (struct fs_node *);
 typedef struct dirent *(*readdir_type_t) (struct fs_node *, uint32_t);
 typedef struct fs_node *(*finddir_type_t) (struct fs_node *, char *name);
-typedef void (*create_type_t) (struct fs_node *, char *name, uint16_t permission);
+typedef void (*create_type_t) (struct fs_node *, char *name, void *data, uint32_t size, uint16_t permission);
+typedef void (*rm_type_t) (struct fs_node *, char *name);
 typedef void (*mkdir_type_t) (struct fs_node *, char *name, uint16_t permission);
 typedef int (*ioctl_type_t) (struct fs_node *, int request, void * argp);
 typedef int (*get_size_type_t) (struct fs_node *);
@@ -54,6 +55,7 @@ typedef struct fs_node {
 	finddir_type_t finddir;
 	create_type_t create;
 	mkdir_type_t mkdir;
+    rm_type_t rm;
 	ioctl_type_t ioctl;
 	get_size_type_t get_size;
 
@@ -95,11 +97,12 @@ void close_fs(fs_node_t *node);
 struct dirent *readdir_fs(fs_node_t *node, uint32_t index);
 fs_node_t *finddir_fs(fs_node_t *node, char *name);
 int mkdir_fs(char *name, uint16_t permission);
-int create_file_fs(char *name, uint16_t permission);
+int create_file_fs(char *name, void *data, uint32_t size, uint16_t permission);
+int rm_fs(char *name);
 fs_node_t *kopen(char *filename, uint32_t flags);
 char *canonicalize_path(char *cwd, char *input);
-fs_node_t *clone_fs(fs_node_t * source);
-int ioctl_fs(fs_node_t *node, int request, void * argp);
+fs_node_t *clone_fs(fs_node_t *source);
+int ioctl_fs(fs_node_t *node, int request, void *argp);
 
 void vfs_init();
 void vfs_install();
