@@ -615,3 +615,131 @@ int fat_format(fat32_disk_t *fat32_disk, char *label) {
 
     return 1;
 }
+
+fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name) {
+    fs_node_t *fnode = malloc(sizeof(fs_node_t));
+	memset(fnode, 0x00, sizeof(fs_node_t));
+	fnode->inode = 0;
+	strcpy(fnode->name, name);
+	fnode->uid = 0;
+	fnode->gid = 0;
+	fnode->flags = VFS_DIR;
+	fnode->read = NULL;
+	fnode->write = NULL;
+	fnode->open = NULL;
+	fnode->close = NULL;
+	fnode->readdir = fat_readdir;
+	fnode->finddir = fat_finddir;
+	fnode->ioctl = NULL;
+    
+    fat_node_t *fatnode = malloc(sizeof(fat_node_t));
+    memset(fatnode, 0x00, sizeof(fat_node_t));
+
+    fatnode->disk = disk;
+    fatnode->cluster = disk->bpb->root_cluster;
+
+    fnode->device = fatnode;
+
+	return fnode;
+}
+
+fs_node_t *fat_finddir(fs_node_t *node, char *name) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    directory_entry_t entry;
+
+    if (!fat_find_file(fatnode->disk, fatnode->cluster, name, &entry))
+        return NULL;
+
+    fs_node_t *out = malloc(sizeof(fs_node_t));
+
+    memset(out, 0, sizeof(fs_node_t));
+
+    strcpy(out->name, name);
+
+    out->flags = (entry.attr & ATTR_DIR) ? VFS_DIR : VFS_FILE;
+
+    fat_node_t *newnode = malloc(sizeof(fat_node_t));
+
+    memset(newnode, 0, sizeof(fat_node_t));
+
+    newnode->disk = fatnode->disk;
+
+    newnode->cluster = ((uint32_t)entry.first_cluster_high << 16) | entry.first_cluster_low;
+
+    newnode->size = entry.size;
+
+    out->device = newnode;
+
+    out->length = entry.size;
+
+    if (out->flags & VFS_DIR) {
+        out->finddir = fat_finddir;
+        out->readdir = fat_readdir;
+    } else {
+        out->read = fat_read;
+    }
+
+    return out;
+}
+
+struct dirent *fat_readdir(fs_node_t *node, uint32_t index) {
+    fat_node_t *fatnode = (fat_node_t *) node->device;
+
+    fat_directory_t dir;
+
+    fat_ls(fatnode->disk, fatnode->cluster, &dir);
+
+    if (index >= dir.count)
+        return NULL;
+
+    struct dirent *d = malloc(sizeof(struct dirent));
+
+    memset(d, 0, sizeof(struct dirent));
+
+    strcpy(d->name, dir.nodes[index].name);
+
+    d->ino = dir.nodes[index].cluster;
+
+    return d;
+}
+
+uint32_t fat_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    fat_node_t *fatnode = (fat_node_t *)node->device;
+
+    uint32_t cluster = fatnode->cluster;
+    fat32_disk_t *disk = fatnode->disk;
+
+    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
+
+    // read whole file into temp buffer
+    uint8_t *tmp = malloc(fatnode->size);
+
+    uint8_t *ptr = tmp;
+
+    uint32_t remaining = fatnode->size;
+
+    while (cluster < 0x0FFFFFF8 && remaining > 0) {
+        read_cluster(disk, cluster, ptr);
+
+        cluster = disk->fat[cluster];
+
+        ptr += cluster_size;
+
+        remaining = (remaining > cluster_size) ? remaining - cluster_size : 0;
+    }
+
+    if (offset > fatnode->size) {
+        free(tmp);
+        return 0;
+    }
+
+    if (offset + size > fatnode->size)
+        size = fatnode->size - offset;
+
+    memcpy(buffer, tmp + offset, size);
+
+    free(tmp);
+
+    return size;
+}

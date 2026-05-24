@@ -7,6 +7,7 @@
 #include <memory/liballoc/liballoc.h>
 #include <string.h>
 #include <itoa.h>
+#include <fs/vfs.h>
 
 #define MAX_NODES 128
 #define ATTR_DIR 0x10
@@ -105,6 +106,13 @@ typedef struct {
     int count;
 } fat_directory_t;
 
+typedef struct {
+    fat32_disk_t *disk;
+    uint32_t cluster;
+    uint32_t parent_cluster;
+    uint32_t size;
+} fat_node_t;
+
 int fat_load(fat32_disk_t *fat32_disk);
 void fat_init(fat32_disk_t *fat32_disk);
 void fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata);
@@ -121,5 +129,10 @@ uint32_t fat_file_exists(fat32_disk_t *disk, char *name, uint32_t dir_cluster);
 int fat_find_file(fat32_disk_t *disk, uint32_t dir_cluster, char *name, directory_entry_t *out);
 void fat_ls(fat32_disk_t *disk, uint32_t dir_cluster, fat_directory_t *out);
 int fat_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name);
+
+fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name);
+fs_node_t *fat_finddir(fs_node_t *node, char *name);
+struct dirent *fat_readdir(fs_node_t *node, uint32_t index);
+uint32_t fat_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer);
 
 #endif

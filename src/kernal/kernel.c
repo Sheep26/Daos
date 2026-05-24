@@ -118,30 +118,31 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     vfs_init();
 
     vfs_mount("/dev/null", null_device_create());
-    fs_node_t *node = kopen("/dev/null", 0);
-
-    if (node) {
-        uint8_t read_buf[16];
-
-        uint32_t n = read_fs(node, 0, sizeof(buf), read_buf);
-
-        serial_print("Data: ");
-        itoa(read_buf[0], buf, 10);
-        serial_println(buf);
-
-        close_fs(node);
-        free(node);
-    }
 
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
     int ata0_indenify = ata_identify(&ata0);
 
     if (ata0_indenify) {
         fat_disk_init(&fat32_disk0, &ata0);
+        vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
 
-        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+        fs_node_t *file = kopen("/fs/WOO/Wooo.txt", 0);
 
+        if (file) {
+            char *read_buf = malloc(file->length + 1);
+
+            uint32_t n = read_fs(file, 0, file->length, read_buf);
+
+            read_buf[file->length] = 0;
+
+            serial_print("Data: ");
+            serial_println(read_buf);
+
+            close_fs(file);
+            free(file);
+        }
         
+        // char wooo[] = "Wowwwwie we get data in the file wooooooo.";
         // fat_format(&fat32_disk0, "Rahh");
         // fat_write_file(&fat32_disk0, "Wooo.txt", wooo, sizeof(wooo), fat32_disk0.bpb->root_cluster);
         // fat_mkdir(&fat32_disk0, fat32_disk0.bpb->root_cluster, "WOO");

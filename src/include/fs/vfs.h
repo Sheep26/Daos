@@ -14,6 +14,7 @@
 #define VFS_FILE 0x01
 #define VFS_DIR 0x02
 #define VFS_CHARDEVICE 0x04
+#define VFS_BLOCKDEVICE 0x08
 
 struct fs_node;
 
