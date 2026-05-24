@@ -140,7 +140,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
         fs_node_t *file = kopen("/fs/Wooo.txt", 0);
 
-        if (file) {
+        if (file && (file->flags & VFS_FILE)) {
             char *read_buf = malloc(file->length + 1);
 
             uint32_t n = read_fs(file, 0, file->length, read_buf);
