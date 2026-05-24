@@ -774,6 +774,9 @@ struct dirent *fat_vfs_readdir(fs_node_t *node, uint32_t index) {
 }
 
 uint32_t fat_vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *buffer) {
+    if (!(node->flags & VFS_FILE)) // Make sure node is file.
+        return 0;
+
     fat_node_t *fatnode = (fat_node_t *) node->device;
 
     uint32_t cluster = fatnode->cluster;

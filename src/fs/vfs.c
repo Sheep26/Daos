@@ -556,10 +556,6 @@ fs_node_t *get_mount_point(char * path, unsigned int path_depth, char **outpath,
 	return last;
 }
 
-
-
-
-
 /**
  * kopen: Open a file by name.
  *
