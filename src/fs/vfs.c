@@ -68,6 +68,9 @@ void open_fs(fs_node_t *node, uint8_t read, uint8_t write) {
  * @param node Node to close
  */
 void close_fs(fs_node_t *node) {
+	if (!node)
+        return;
+
 	if (node->close && node != fs_root)
 		node->close(node);
 }
