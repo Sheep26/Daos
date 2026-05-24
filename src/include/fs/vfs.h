@@ -123,5 +123,6 @@ int ioctl_fs(fs_node_t *node, int request, void *argp);
 
 void vfs_install();
 int vfs_mount(char * path, fs_node_t * local_root);
+void vfs_init();
 
 #endif

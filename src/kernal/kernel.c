@@ -115,7 +115,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     setup_vga(fb_tag);
 
-    vfs_install();
+    vfs_init();
     vfs_mount("/dev/null", null_device_create());
 
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
@@ -125,7 +125,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         if (!fat_disk_init(&fat32_disk0, &ata0))
             fat_format(&fat32_disk0, "Disk");
         
-        vfs_mount("/", fat_mount_create(&fat32_disk0, "fs"));
+        vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
 
         char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
@@ -133,20 +133,20 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         // rm_fs("/WOO");
 
         fs_directory_t fs_dir;
-        ls_fs("/", &fs_dir);
+        ls_fs("/fs", &fs_dir);
 
         for (int i = 0; i < fs_dir.count; i++)
             serial_println(fs_dir.nodes[i].name);
 
-        fs_node_t *file = kopen("/itworkie.txt", 0);
+        fs_node_t *file = kopen("/fs/itworkie.txt", 0);
 
         if (!file)
-            create_file_fs("/itworkie.txt", wooo, sizeof(wooo), 0);
+            create_file_fs("/fs/itworkie.txt", wooo, sizeof(wooo), 0);
 
         close_fs(file);
         free(file);
 
-        file = kopen("/itworkie.txt", 0);
+        file = kopen("/fs/itworkie.txt", 0);
 
         if (file && (file->flags & VFS_FILE)) {
             char *read_buf = malloc(file->length + 1);
