@@ -129,8 +129,9 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
         char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
-        // mkdir_fs("/fs/WOO", 0);
+        // mkdir_fs("/WOO", 0);
         // rm_fs("/WOO");
+        // create_file_fs("Awesomes.txt", wooo, sizeof(wooo), 0);
 
         fs_directory_t fs_dir;
         ls_fs("/", &fs_dir);
