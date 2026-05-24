@@ -8,6 +8,11 @@
 tree_t *fs_tree = NULL; /* File system mountpoint tree */
 fs_node_t *fs_root = NULL; /* Pointer to the root mount fs_node (must be some form of filesystem, even ramdisk) */
 
+struct vfs_entry {
+	char * name;
+	fs_node_t * file; /* Or null */
+};
+
 /**
  * read_fs: Read a file system node based on its underlying type.
  *
@@ -206,14 +211,100 @@ int rm_fs(char *name) {
 	return 0;
 }
 
+tree_node_t *vfs_get_tree_node(char *path) {
+    if (!path || path[0] != '/')
+        return NULL;
+
+    if (!strcmp(path, "/"))
+        return fs_tree->root;
+
+    char *tmp = strdup(path);
+    char *p = tmp;
+
+    int len = strlen(tmp);
+
+    while (*p) {
+        if (*p == '/')
+            *p = '\0';
+        p++;
+    }
+
+    tree_node_t *node = fs_tree->root;
+
+    char *part = tmp + 1;
+
+    while (part < tmp + len) {
+        int found = 0;
+
+        foreach(child, node->children) {
+            tree_node_t *t = child->value;
+            struct vfs_entry *e = t->value;
+
+            if (!strcmp(e->name, part)) {
+                node = t;
+                found = 1;
+                break;
+            }
+        }
+
+        if (!found) {
+            free(tmp);
+            return NULL;
+        }
+
+        part += strlen(part) + 1;
+    }
+
+    free(tmp);
+    return node;
+}
+
 int ls_fs(char *name, fs_directory_t *out) {
 	fs_node_t *node = kopen(name, 0);
 
-	if ((node->flags & VFS_DIR) && node->ls)
-		node->ls(node, out);
+	if (!node)
+		return 0;
+
+	out->count = 0;
+	
+	tree_node_t *mount_node = vfs_get_tree_node(name);
+
+    if (mount_node) {
+        foreach(child, mount_node->children) {
+            if (out->count >= FS_MAX_NODES)
+                break;
+
+            tree_node_t *t = child->value;
+            struct vfs_entry *e = t->value;
+
+            fs_directory_node_t *n = &out->nodes[out->count++];
+
+            strcpy(n->name, e->name);
+            n->is_dir = 1;
+            n->size = 0;
+        }
+    }
+
+	if ((node->flags & VFS_DIR) && node->ls) {
+		fs_directory_t dir;
+		memset(&dir, 0, sizeof(fs_directory_t));
+		node->ls(node, &dir);
+
+		for (int i = 0; i < dir.count; i++) {
+			if (out->count >= FS_MAX_NODES)
+				break;
+
+			fs_directory_node_t *n = &out->nodes[out->count++];
+
+			strcpy(n->name, dir.nodes[i].name);
+			n->size = dir.nodes[i].size;
+			n->is_dir = dir.nodes[i].is_dir;
+		}
+	}
 
 	free(node);
-	return 0;
+
+	return 1;
 }
 
 int mkdir_fs(char *name, uint16_t permission) {
@@ -384,12 +475,7 @@ char *canonicalize_path(char *cwd, char *input) {
 	return output;
 }
 
-struct vfs_entry {
-	char * name;
-	fs_node_t * file; /* Or null */
-};
-
-void vfs_install() {
+void vfs_init() {
 	/* Initialize the mountpoint tree */
 	fs_tree = tree_create();
 
@@ -399,18 +485,6 @@ void vfs_install() {
 	root->file = NULL; /* Nothing mounted as root */
 
 	tree_set_root(fs_tree, root);
-}
-
-void vfs_init() {
-    vfs_install();
-
-    fs_node_t *root = malloc(sizeof(fs_node_t));
-    memset(root, 0, sizeof(fs_node_t));
-
-    strcpy(root->name, "/");
-    root->flags = VFS_DIR;
-
-    vfs_mount("/", root);
 }
 
 /**

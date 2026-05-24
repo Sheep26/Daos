@@ -116,7 +116,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     setup_vga(fb_tag);
 
     vfs_init();
-    vfs_mount("/dev/null", null_device_create());
 
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
     int ata0_indenify = ata_identify(&ata0);
@@ -124,42 +123,56 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     if (ata0_indenify) {
         if (!fat_disk_init(&fat32_disk0, &ata0))
             fat_format(&fat32_disk0, "Disk");
-        
-        vfs_mount("/fs", fat_mount_create(&fat32_disk0, "fs"));
+
+        vfs_mount("/", fat_mount_create(&fat32_disk0, "fs"));
+        vfs_mount("/dev/null", null_device_create());
 
         char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
-        // mkdir_fs("/WOO", 0);
+        // mkdir_fs("/fs/WOO", 0);
         // rm_fs("/WOO");
 
         fs_directory_t fs_dir;
-        ls_fs("/fs", &fs_dir);
+        ls_fs("/", &fs_dir);
 
-        for (int i = 0; i < fs_dir.count; i++)
-            serial_println(fs_dir.nodes[i].name);
+        for (int i = 0; i < fs_dir.count; i++) {
+            serial_print(fs_dir.nodes[i].name);
+            serial_println(fs_dir.nodes[i].is_dir ? "/" : "");
+        }
 
-        fs_node_t *file = kopen("/fs/itworkie.txt", 0);
+        fs_node_t *file = kopen("/itworkie.txt", 0);
 
         if (!file)
-            create_file_fs("/fs/itworkie.txt", wooo, sizeof(wooo), 0);
+            create_file_fs("/itworkie.txt", wooo, sizeof(wooo), 0);
 
         close_fs(file);
         free(file);
 
-        file = kopen("/fs/itworkie.txt", 0);
+        file = kopen("/itworkie.txt", 0);
 
         if (file && (file->flags & VFS_FILE)) {
             char *read_buf = malloc(file->length + 1);
-
-            uint32_t n = read_fs(file, 0, file->length, read_buf);
+            read_fs(file, 0, file->length, read_buf);
 
             read_buf[file->length] = 0;
 
-            serial_print("Data: ");
             serial_println(read_buf);
 
             close_fs(file);
             free(file);
+        }
+
+        fs_node_t *null_file = kopen("/dev/null", 0);
+
+        if (null_file) {
+            uint32_t *read_buf[1];
+            read_fs(null_file, 0, sizeof(read_buf), read_buf);
+
+            itoa(read_buf[0], buf, 10);
+            serial_println(buf);
+
+            close_fs(null_file);
+            free(null_file);
         }
 
         fillscreen(0x00000000);
