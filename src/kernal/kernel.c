@@ -131,7 +131,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
         // mkdir_fs("/WOO", 0);
         // rm_fs("/WOO");
-        // create_file_fs("Awesomes.txt", wooo, sizeof(wooo), 0);
+        // create_file_fs("Wooo.txt", wooo, sizeof(wooo), 0);
 
         fs_directory_t fs_dir;
         ls_fs("/", &fs_dir);
