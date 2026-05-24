@@ -401,18 +401,6 @@ void vfs_install() {
 	tree_set_root(fs_tree, root);
 }
 
-void vfs_init() {
-    vfs_install();
-
-    fs_node_t *root = malloc(sizeof(fs_node_t));
-    memset(root, 0, sizeof(fs_node_t));
-
-    strcpy(root->name, "/");
-    root->flags = VFS_DIR;
-
-    vfs_mount("/", root);
-}
-
 /**
  * vfs_mount - Mount a file system to the specified path.
  *

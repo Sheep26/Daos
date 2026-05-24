@@ -121,7 +121,6 @@ char *canonicalize_path(char *cwd, char *input);
 fs_node_t *clone_fs(fs_node_t *source);
 int ioctl_fs(fs_node_t *node, int request, void *argp);
 
-void vfs_init();
 void vfs_install();
 int vfs_mount(char * path, fs_node_t * local_root);
 
