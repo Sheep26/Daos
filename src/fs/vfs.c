@@ -411,7 +411,6 @@ void vfs_init() {
     root->flags = VFS_DIR;
 
     vfs_mount("/", root);
-    fs_root = root;
 }
 
 /**
