@@ -3,10 +3,10 @@
 #include <string.h>
 
 ramfs_file_t *ramfs_find(ramfs_t *fs, char *name) {
-    for (uint32_t i = 0; i < fs->count; i++) {
+    for (uint32_t i = 0; i < fs->count; i++)
         if (!strcmp(fs->files[i].name, name))
             return &fs->files[i];
-    }
+
     return NULL;
 }
 
@@ -104,9 +104,9 @@ fs_node_t *ramfs_create(void) {
 
     root->device = fs;
 
-    root->readdir = ramfs_readdir;
-    root->finddir = ramfs_finddir;
-    root->create = ramfs_create_file;
+    // root->readdir = ramfs_readdir;
+    // root->finddir = ramfs_finddir;
+    // root->create = ramfs_create_file;
 
     return root;
 }

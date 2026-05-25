@@ -694,8 +694,10 @@ int fat_format(fat32_disk_t *fat32_disk, char *label) {
 fs_node_t *fat_mount_create(fat32_disk_t *disk, char *name) {
     fs_node_t *fnode = malloc(sizeof(fs_node_t));
 	memset(fnode, 0x00, sizeof(fs_node_t));
+
 	fnode->inode = 0;
 	strcpy(fnode->name, name);
+
 	fnode->uid = 0;
 	fnode->gid = 0;
 	fnode->flags = VFS_DIR;
