@@ -42,8 +42,8 @@ typedef struct {
 int wait_bsy(ata_t *ata);
 int ata_exists(ata_t *ata);
 int wait_drq(ata_t *ata);
-int read_sectors(uint32_t lba, uint8_t count, uint16_t *buffer, ata_t *ata);
-int write_sectors(uint32_t lba, uint8_t count, uint16_t *buffer, ata_t *ata);
+int read_sectors(uint32_t lba, uint32_t count, uint16_t *buffer, ata_t *ata);
+int write_sectors(uint32_t lba, uint32_t count, uint16_t *buffer, ata_t *ata);
 int ata_identify(ata_t *ata);
 void init_ata(ata_t *ata, uint16_t data, uint16_t err, uint16_t seccount, uint16_t lba_low, uint16_t lba_mid, uint16_t lba_high, uint16_t drive_sel, uint16_t command, uint16_t status, int slave);
 

@@ -105,8 +105,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     // Init pmm and heap.
     pmm_init(mmap_entries, max_addr, mmap_entry_count, (uint32_t) &_kernel_end);
+
+    serial_println("Reserving framebuffer");
     pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
-    heap_init((uint32_t) &_kernel_end);
+
+    serial_println("Initalising heap.");
+    heap_init(pmm_bitmap_location + pmm_bitmap_size);
 
     init_cpu(&cpu);
 
@@ -148,18 +152,68 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         for (int i = 0; i < fs_dir.count; i++)
             serial_println(fs_dir.nodes[i].name);
 
-        file = kopen("/fsroot/itworkie.txt", 0);
+        fs_node_t *badapple_file = kopen("/fsroot/VIDEO.BIN", 0);
 
-        if (file && (file->flags & VFS_FILE)) {
-            char *read_buf = malloc(file->length + 1);
-            read_fs(file, 0, file->length, read_buf);
+        if (badapple_file) {
+            serial_print("Badapple size: ");
 
-            read_buf[file->length] = 0;
+            char sizebuf[32];
+            itoa(badapple_file->length, sizebuf, 10);
 
-            serial_println(read_buf);
+            serial_println(sizebuf);
 
-            close_fs(file);
-            free(file);
+            uint8_t *badapple_data = malloc(badapple_file->length);
+            read_fs(badapple_file, 0, badapple_file->length, badapple_data);
+
+            serial_println("Badapple loaded");
+
+            /* for (uint32_t i = 0; i < badapple_file->length; i++) {
+                if ((i % 16) == 0) {
+                    serial_print("\n");
+                }
+
+                char hex[8];
+
+                itoa(badapple_data[i], hex, 16);
+
+                if (badapple_data[i] < 16)
+                    serial_print("0");
+
+                serial_print(hex);
+                serial_print(" ");
+            } */
+
+            uint32_t badapple_width = 640;
+            uint32_t badapple_height = 480;
+
+            uint32_t bytes_per_row = (badapple_width + 7) / 8;
+            uint32_t bytes_per_frame = bytes_per_row * badapple_height;
+
+            uint32_t frames = badapple_file->length / bytes_per_frame;
+
+            uint64_t pos = 0;
+
+            for (uint32_t frame = 0; frame < frames; frame++) {
+                for (uint32_t y = 0; y < badapple_height; y++) {
+                    for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
+                        uint8_t row_byte = badapple_data[frame * bytes_per_frame + y * bytes_per_row + byte];
+
+                        for (uint32_t bit = 0; bit < 8; bit++) {
+                            uint32_t x = byte * 8 + bit;
+
+                            uint8_t pixel = (row_byte >> (7 - bit)) & 1;
+
+                            putpixel(x, y, pixel ? 0x00FFFFFF : 0x00000000);
+                        }
+                    }
+                }
+
+                serial_print("Frame: ");
+                itoa(frame, buf, 10);
+                serial_println(buf);
+
+                flush_buffer();
+            }
         }
 
         fillscreen(0x00000000);

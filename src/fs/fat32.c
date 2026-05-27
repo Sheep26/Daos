@@ -168,11 +168,9 @@ uint32_t fat_read_file(fat32_disk_t *disk, char *name, void *out_buffer, uint32_
         return 0;
 
     uint32_t cluster = (e.first_cluster_high << 16) | e.first_cluster_low;
-
     uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
 
     uint8_t *out = (uint8_t*) out_buffer;
-
     uint32_t remaining = e.size;
 
     while (cluster < 0x0FFFFFF8 && remaining > 0) {
@@ -795,41 +793,57 @@ uint32_t fat_vfs_read(fs_node_t *node, uint32_t offset, uint32_t size, uint8_t *
 
     fat_node_t *fatnode = (fat_node_t *) node->device;
 
-    uint32_t cluster = fatnode->cluster;
-    fat32_disk_t *disk = fatnode->disk;
-
-    uint32_t cluster_size = disk->bpb->sectors_per_cluster * 512;
-
-    // read whole file into temp buffer
-    uint8_t *tmp = malloc(fatnode->size);
-
-    uint8_t *ptr = tmp;
-
-    uint32_t remaining = fatnode->size;
-
-    while (cluster < 0x0FFFFFF8 && remaining > 0) {
-        read_cluster(disk, cluster, ptr);
-
-        cluster = disk->fat[cluster];
-
-        ptr += cluster_size;
-
-        remaining = (remaining > cluster_size) ? remaining - cluster_size : 0;
-    }
-
-    if (offset > fatnode->size) {
-        free(tmp);
+    // Offset beyond EOF
+    if (offset >= fatnode->size)
         return 0;
-    }
 
+    // Clamp read size to EOF
     if (offset + size > fatnode->size)
         size = fatnode->size - offset;
 
-    memcpy(buffer, tmp + offset, size);
+    uint32_t cluster_size = fatnode->disk->bpb->sectors_per_cluster * 512;
+    uint32_t cluster = fatnode->cluster & 0x0FFFFFFF;
 
-    free(tmp);
+    // Skip clusters until reaching offset
+    uint32_t cluster_skip = offset / cluster_size;
+    uint32_t cluster_offset = offset % cluster_size;
 
-    return size;
+    for (uint32_t i = 0; i < cluster_skip; i++) {
+        if (cluster >= 0x0FFFFFF8 || cluster < 2)
+            return 0;
+
+        cluster = fatnode->disk->fat[cluster] & 0x0FFFFFFF;
+    }
+
+    uint8_t *cluster_buffer = malloc(cluster_size);
+
+    if (!cluster_buffer)
+        return 0;
+    
+    uint32_t bytes_read = 0;
+    uint32_t bytes_remaining = size;
+
+    while (bytes_remaining > 0) {
+        if (cluster >= 0x0FFFFFF8 || cluster < 2)
+            break;
+
+        read_cluster(fatnode->disk, cluster, cluster_buffer);
+
+        uint32_t bytes_available = cluster_size - cluster_offset;
+        uint32_t bytes_to_copy = (bytes_remaining < bytes_available) ? bytes_remaining : bytes_available;
+
+        memcpy(buffer + bytes_read, cluster_buffer + cluster_offset, bytes_to_copy);
+
+        bytes_read += bytes_to_copy;
+        bytes_remaining -= bytes_to_copy;
+
+        cluster_offset = 0;
+        cluster = fatnode->disk->fat[cluster] & 0x0FFFFFFF;
+    }
+
+    free(cluster_buffer);
+
+    return bytes_read;
 }
 
 int fat_vfs_create_file(fs_node_t *node, char *name, void *data, uint32_t size, uint16_t permission) {

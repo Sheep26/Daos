@@ -157,63 +157,81 @@ int ata_identify(ata_t *ata) {
     return 1;
 }
 
-int read_sectors(uint32_t lba, uint8_t count, uint16_t *buffer, ata_t *ata) {
-    if (!ata_exists(ata)) return 0;
-    if (!wait_bsy(ata)) return 0;
+int read_sectors(uint32_t lba, uint32_t count, uint16_t *buffer, ata_t *ata) {
+    while (count > 0) {
+        uint8_t chunk = (count > 255) ? 255 : count;
 
-    outb(ata->drive_sel, (ata->slave ? 0xF0 : 0xE0) | ((lba >> 24) & 0x0F));
-    ata_io_wait(ata);
-
-    outb(ata->seccount, count);
-    outb(ata->lba_low, (uint8_t)lba);
-    outb(ata->lba_mid, (uint8_t)(lba >> 8));
-    outb(ata->lba_high, (uint8_t)(lba >> 16));
-    outb(ata->command, 0x20); // Read sectors
-    ata_io_wait(ata);
-
-    int sectors = (count == 0 ? 256 : count);
-
-    for (int j = 0; j < sectors; j++) {
+        if (!ata_exists(ata)) return 0;
         if (!wait_bsy(ata)) return 0;
-        if (!wait_drq(ata)) return 0;
 
-        for (int i = 0; i < 256; i++)
-            buffer[i + j * 256] = inw(ata->data);
+        outb(ata->drive_sel, (ata->slave ? 0xF0 : 0xE0) | ((lba >> 24) & 0x0F));
+        ata_io_wait(ata);
+
+        outb(ata->seccount, chunk);
+        outb(ata->lba_low, (uint8_t) lba);
+        outb(ata->lba_mid, (uint8_t) (lba >> 8));
+        outb(ata->lba_high, (uint8_t) (lba >> 16));
+        outb(ata->command, 0x20); // Read sectors
+        ata_io_wait(ata);
+
+        int sectors = (chunk == 0 ? 256 : chunk);
+
+        for (int j = 0; j < sectors; j++) {
+            if (!wait_bsy(ata)) return 0;
+            if (!wait_drq(ata)) return 0;
+
+            for (int i = 0; i < 256; i++)
+                buffer[i + j * 256] = inw(ata->data);
+        }
+
+        lba += sectors;
+        buffer += sectors * 256;
+        count -= sectors;
     }
 
     return 1;
 }
 
-int write_sectors(uint32_t lba, uint8_t count, uint16_t *buffer, ata_t *ata) {
-    if (!ata_exists(ata)) return 0;
-    if (!wait_bsy(ata)) return 0;
+int write_sectors(uint32_t lba, uint32_t count, uint16_t *buffer, ata_t *ata) {
+    while (count > 0) {
+        uint8_t chunk = (count > 255) ? 255 : count;
 
-    outb(ata->drive_sel, (ata->slave ? 0xF0 : 0xE0) | ((lba >> 24) & 0x0F));
-    ata_io_wait(ata);
-
-    outb(ata->seccount, count);
-    outb(ata->lba_low, (uint8_t) lba);
-    outb(ata->lba_mid, (uint8_t) (lba >> 8));
-    outb(ata->lba_high, (uint8_t) (lba >> 16));
-    outb(ata->command, 0x30); // Write sectors
-    ata_io_wait(ata);
-
-    for (int j = 0; j < (count == 0 ? 256 : count); j++) {
+        if (!ata_exists(ata)) return 0;
         if (!wait_bsy(ata)) return 0;
-        if (!wait_drq(ata)) return 0;
 
-        for (int i = 0; i < 256; i++)
-            outw(ata->data, buffer[i + j * 256]);
-        
+        outb(ata->drive_sel, (ata->slave ? 0xF0 : 0xE0) | ((lba >> 24) & 0x0F));
         ata_io_wait(ata);
 
-        if (!wait_bsy(ata)) return 0;
+        outb(ata->seccount, chunk);
+        outb(ata->lba_low, (uint8_t) lba);
+        outb(ata->lba_mid, (uint8_t) (lba >> 8));
+        outb(ata->lba_high, (uint8_t) (lba >> 16));
+        outb(ata->command, 0x30); // Write sectors
+        ata_io_wait(ata);
+
+        int sectors = (chunk == 0 ? 256 : chunk);
+
+        for (int j = 0; j < sectors; j++) {
+            if (!wait_bsy(ata)) return 0;
+            if (!wait_drq(ata)) return 0;
+
+            for (int i = 0; i < 256; i++)
+                outw(ata->data, buffer[i + j * 256]);
+            
+            ata_io_wait(ata);
+
+            if (!wait_bsy(ata)) return 0;
+        }
+        
+        // Cache flush
+        outb(ata->command, 0xE7);
+        ata_io_wait(ata);
+        wait_bsy(ata);
+
+        lba += sectors;
+        buffer += sectors * 256;
+        count -= sectors;
     }
-    
-    // Cache flush
-    outb(ata->command, 0xE7);
-    ata_io_wait(ata);
-    wait_bsy(ata);
     
     return 1;
 }
