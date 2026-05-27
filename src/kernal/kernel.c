@@ -152,7 +152,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
         for (int i = 0; i < fs_dir.count; i++)
             serial_println(fs_dir.nodes[i].name);
-        
+
         run_badapple();
 
         fillscreen(0x00000000);
