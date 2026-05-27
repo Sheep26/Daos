@@ -191,8 +191,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
             uint32_t frames = badapple_file->length / bytes_per_frame;
 
-            uint64_t pos = 0;
-
             for (uint32_t frame = 0; frame < frames; frame++) {
                 for (uint32_t y = 0; y < badapple_height; y++) {
                     for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
