@@ -1,4 +1,4 @@
-#include <font/font.h>
+#include <font.h>
 
 char font8x8_basic_bitmap[128][8] = {
     { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00},   // U+0000 (nul)

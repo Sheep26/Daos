@@ -9,7 +9,7 @@
 #include <itoa.h>
 #include <drivers/io.h>
 #include <memory/liballoc/liballoc.h>
-#include <font/font.h>
+#include <font.h>
 
 enum video_type {
 	VIDEO_TYPE_NONE = 0x00,
