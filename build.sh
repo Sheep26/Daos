@@ -1,4 +1,7 @@
-rm -rf build
+if [ -d "build" ]; then
+    rm -rf build
+fi
+
 mkdir build
 mkdir build/isodir
 mkdir -p build/isodir/boot/grub
@@ -25,6 +28,5 @@ i686-elf-gcc -T linker.ld -o build/daos -ffreestanding -O2 -nostdlib build/boot.
 
 cp build/daos build/isodir/boot/daos
 cp grub.cfg build/isodir/boot/grub/grub.cfg
-#cp video.bin build/isodir/boot/video.bin
 
 grub-mkrescue -o build/daos.iso build/isodir

@@ -4,6 +4,7 @@
 #include <drivers/vga.h>
 #include <fs/vfs.h>
 #include <font.h>
+#include <drivers/io.h>
 
 void run_badapple();
 

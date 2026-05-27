@@ -128,8 +128,19 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     int ata0_indenify = ata_identify(&ata0);
 
     if (ata0_indenify) {
-        if (!fat_disk_init(&fat32_disk0, &ata0))
+        if (!fat_disk_init(&fat32_disk0, &ata0)) {
+            draw_string("Formatting disk.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+            flush_buffer();
+
             fat_format(&fat32_disk0, "Disk");
+
+            serial_println("Disk Formatted, please close the os.");
+            fillscreen(0x00000000);
+            draw_string("Disk Formatted, please close the os.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+
+            flush_buffer();
+            return;
+        }
 
         vfs_mount("/fsroot", fat_mount_create(&fat32_disk0, "FSROOT"));
 

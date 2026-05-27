@@ -2,12 +2,13 @@
 
 void run_badapple() {
     fillscreen(0x00000000);
-    draw_string("Bad Apple Loading...", 8, 8, 0x00FFFFFFFF, 0x00000000, font8x8_basic);
+    draw_string("Bad Apple Loading", 8, 8, 0x00FFFFFFFF, 0x00000000, font8x8_basic);
+    serial_println("Loading Bad Apple");
 
     flush_buffer();
 
     char buf[32];
-    fs_node_t *badapple_file = kopen("/fsroot/VIDEO.BIN", 0);
+    fs_node_t *badapple_file = kopen("/fsroot/BADAPPLE.BIN", 0);
 
     if (badapple_file) {
         serial_print("Badapple size: ");
@@ -67,5 +68,10 @@ void run_badapple() {
 
             flush_buffer();
         }
+    } else {
+        draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        serial_println("Bad Apple not found");
+
+        flush_buffer();
     }
 }
