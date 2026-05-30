@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #define MAX_ARGS 32
+#define CMD_MAGIC 0xC0DEBEEF
 
 typedef void (*cmd_func_t) (char *argv[32], int argc);
 struct command_s;
@@ -11,6 +12,8 @@ struct command_s;
 typedef struct command_s {
     char *name;
     char *description;
+
+    uint32_t magic;
 
     cmd_func_t function;
     struct command_s *next;

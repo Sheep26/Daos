@@ -18,7 +18,7 @@ void dump_commands() {
     while (pos) {
         serial_print("Command: ");
 
-        itoa(pos, buf, 10);
+        itoa(pos->magic, buf, 16);
         serial_println(buf);
 
         pos = pos->next;
@@ -36,6 +36,8 @@ command_t *create_command(char *name, char *description, cmd_func_t function) {
 
     command->function = function;
     command->next = NULL;
+
+    command->magic = CMD_MAGIC;
 
     if (!command_list) {
         command_list = command;
