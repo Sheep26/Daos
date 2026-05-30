@@ -16,7 +16,7 @@ void dump_commands() {
     }
 }
 
-command_t *create_command(char *name, char *description, func_t function) {
+command_t *create_command(char *name, char *description, cmd_func_t function) {
     command_t *command = (command_t*) calloc(1, sizeof(command_t));
 
     command->name = calloc(1, strlen(name) + 1);
