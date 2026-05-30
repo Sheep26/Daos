@@ -47,6 +47,10 @@ static inline void enable_interrupts() {
     __asm__ volatile ("sti");
 }
 
+static inline void io_wait(void){
+    outb(0x80, 0);
+}
+
 void serial_init(void);
 void serial_print(const char *str);
 void serial_println(const char *str);

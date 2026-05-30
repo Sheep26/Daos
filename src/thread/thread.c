@@ -1,0 +1,176 @@
+#include <thread.h>
+
+k_thread_t *thread_list = NULL;
+k_thread_t *current_thread = NULL;
+k_thread_t *idle_thread = NULL;
+int reschedule_needed = 0;
+
+extern void context_switch(uint32_t *old_esp, uint32_t *old_ebp, uint32_t new_esp,uint32_t new_ebp);
+
+void idle_func() {
+    while (1) {
+        yield_if_needed();
+
+        __asm__ volatile("hlt");
+    }
+}
+
+void thread_bootstrap() {
+    func_t fn = current_thread->function;
+    fn();
+
+    current_thread->state = FINISHED;
+    yield();
+
+    while (1);
+}
+
+void start_thread(k_thread_t *thread) {
+    if (thread && thread->function) {
+        thread->state = ACTIVE;
+
+        ((func_t) thread->function)();
+
+        thread->state = FINISHED;
+    }
+}
+
+void thread_init_stack(k_thread_t *thread) {
+    uint32_t *stack_top = (uint32_t *) (thread->stack + STACK_SIZE);
+
+    // Fake return into bootstrap
+    *(--stack_top) = 0; // Fake return addr
+    *(--stack_top) = (uint32_t) thread_bootstrap; // Entry
+
+    thread->esp = (uint32_t) stack_top;
+    thread->ebp = (uint32_t) stack_top;
+}
+
+k_thread_t *create_new_thread(void *function) {
+    k_thread_t *thread = (k_thread_t *) calloc(1, sizeof(k_thread_t));
+
+    thread->function = (func_t) function;
+    thread->stack = calloc(1, STACK_SIZE);
+
+    thread_init_stack(thread);
+
+    thread->state = WAITING;
+    thread->wake_tick = 0;
+    thread->next = NULL;
+
+    scheduler_add(thread);
+    return thread;
+}
+
+k_thread_t *create_idle_thread(void *function) {
+    k_thread_t *thread = (k_thread_t *) calloc(1, sizeof(k_thread_t));
+
+    thread->function = (func_t) function;
+    thread->stack = malloc(STACK_SIZE);
+
+    thread_init_stack(thread);
+
+    thread->state = WAITING;
+    thread->wake_tick = 0;
+    thread->next = NULL;
+
+    idle_thread = thread;
+    return thread;
+}
+
+k_thread_t *find_next() {
+    if (!current_thread)
+        return idle_thread;
+
+    k_thread_t *start = current_thread;
+    k_thread_t *t = current_thread->next;
+
+    do {
+        t = t->next ? t->next : thread_list;
+
+        if (t->state == WAITING)
+            return t;
+    } while (t != start);
+
+    return idle_thread;
+}
+
+void yield() {
+    if (!current_thread)
+        return;
+
+    k_thread_t *old = current_thread;
+    k_thread_t *next = find_next();
+
+    if (old->state == ACTIVE)
+        old->state = WAITING;
+
+    if (next != idle_thread)
+        next->state = ACTIVE;
+
+    current_thread = next;
+    context_switch(&old->esp, &old->ebp,next->esp, next->ebp);
+}
+
+void yield_if_needed() {
+    if (reschedule_needed) {
+        reschedule_needed = 0;
+
+        yield();
+    }
+}
+
+void thread_block(k_thread_t *thread) {
+    if (!thread)
+        return;
+
+    thread->state = BLOCKED;
+    yield();
+}
+
+void thread_wake(k_thread_t *thread) {
+    if (!thread)
+        return;
+
+    if (thread->state == BLOCKED)
+        thread->state = WAITING;
+}
+
+void thread_sleep(uint64_t ticks) {
+    current_thread->wake_tick = timer_ticks + ticks;
+    current_thread->state = BLOCKED;
+
+    yield();
+}
+
+void scheduler_add(k_thread_t *thread) {
+    if (!thread_list) {
+        thread_list = thread;
+
+        return;
+    }
+
+    k_thread_t *current = thread_list;
+
+    while (current->next)
+        current = current->next;
+
+    current->next = thread;
+}
+
+void scheduler_run() {
+    if (!thread_list)
+        return;
+
+    current_thread = thread_list;
+    current_thread->state = ACTIVE;
+
+    __asm__ volatile(
+        "mov %0, %%esp\n"
+        "mov %1, %%ebp\n"
+        "ret\n"
+        :
+        : "r"(current_thread->esp),
+          "r"(current_thread->ebp)
+    );
+}

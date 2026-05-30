@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <drivers/vga.h>
 #include <drivers/cpu.h>
+#include <drivers/io.h>
 #include <multiboot.h>
 #include <itoa.h>
 #include <memory/pmm.h>
@@ -12,6 +13,13 @@
 #include <fs/vfs.h>
 #include <fs/nulldev.h>
 #include <badapple.h>
+#include <thread.h>
+#include <pit.h>
+#include <idt.h>
+#include <pic.h>
+#include <timer.h>
+
+#define PIC_FREQUENCY 1000
 
 cpu_t cpu;
 ata_t ata0;
@@ -20,6 +28,9 @@ fat32_disk_t fat32_disk0;
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
 
+extern void irq0();
+extern void irq_ignore();
+
 void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
     if (strcmp(mod->cmdline, name) == 0) {
         if (out_size) *out_size = mod->mod_end - mod->mod_start;
@@ -27,6 +38,15 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
     }
 
     return 0;
+}
+
+void main_thread() {
+    run_badapple();
+
+    fillscreen(0x00000000);
+    draw_string("It should worky.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+
+    flush_buffer();
 }
 
 void kernel_main(uint32_t magic, uint32_t addr) {
@@ -127,48 +147,67 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
     int ata0_indenify = ata_identify(&ata0);
 
-    if (ata0_indenify) {
-        if (!fat_disk_init(&fat32_disk0, &ata0)) {
-            draw_string("Formatting disk.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
-            flush_buffer();
+    if (!ata0_indenify) {
+        draw_string("ERROR: Disk 0 not found", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        flush_buffer();
 
-            fat_format(&fat32_disk0, "Disk");
+        return;
+    }
 
-            serial_println("Disk Formatted, please close the os.");
-            fillscreen(0x00000000);
-            draw_string("Disk Formatted, please close the os.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+    if (!fat_disk_init(&fat32_disk0, &ata0)) {
+        draw_string("Formatting disk.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        flush_buffer();
 
-            flush_buffer();
-            return;
-        }
+        fat_format(&fat32_disk0, "Disk");
 
-        vfs_mount("/fsroot", fat_mount_create(&fat32_disk0, "FSROOT"));
-
-        char wooo[] = "Wowwwwie we get data in the file wooooooo.";
-
-        // mkdir_fs("/fsroot/WOO", 0);
-        // rm_fs("/fsroot/WOO");
-        // create_file_fs("/fsroot/Wooo.txt", wooo, sizeof(wooo), 0);
-
-        fs_node_t *file = kopen("/fsroot/itworkie.txt", 0);
-
-        if (!file)
-            create_file_fs("/fsroot/itworkie.txt", wooo, sizeof(wooo), 0);
-
-        close_fs(file);
-        free(file);
-
-        fs_directory_t fs_dir;
-        ls_fs("/fsroot", &fs_dir);
-
-        for (int i = 0; i < fs_dir.count; i++)
-            serial_println(fs_dir.nodes[i].name);
-
-        run_badapple();
-
+        serial_println("Disk Formatted, please close the os.");
         fillscreen(0x00000000);
-        draw_string("It should worky.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        draw_string("Disk Formatted, please close the os.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
 
         flush_buffer();
+        return;
     }
+
+    vfs_mount("/fsroot", fat_mount_create(&fat32_disk0, "FSROOT"));
+
+    char wooo[] = "Wowwwwie we get data in the file wooooooo.";
+
+    // mkdir_fs("/fsroot/WOO", 0);
+    // rm_fs("/fsroot/WOO");
+    // create_file_fs("/fsroot/Wooo.txt", wooo, sizeof(wooo), 0);
+
+    fs_node_t *file = kopen("/fsroot/itworkie.txt", 0);
+
+    if (!file)
+        create_file_fs("/fsroot/itworkie.txt", wooo, sizeof(wooo), 0);
+
+    close_fs(file);
+    free(file);
+
+    fs_directory_t fs_dir;
+    ls_fs("/fsroot", &fs_dir);
+
+    serial_println("FS root");
+
+    for (int i = 0; i < fs_dir.count; i++)
+        serial_println(fs_dir.nodes[i].name);
+
+    init_idt();
+
+    for (int i = 0; i < 32; i++)
+        set_idt_gate(i, (uint32_t) irq_ignore);
+
+    pic_remap();
+    set_idt_gate(32, (uint32_t) irq0);
+
+    for (int i = 33; i < 48; i++)
+        set_idt_gate(i, (uint32_t) irq_ignore);
+
+    pit_set_frequency(PIC_FREQUENCY);
+    enable_interrupts();
+
+    create_idle_thread(idle_func);
+    create_new_thread(main_thread);
+
+    scheduler_run();
 }
