@@ -12,7 +12,7 @@
 #include <fs/fat32.h>
 #include <fs/vfs.h>
 #include <fs/nulldev.h>
-#include <badapple.h>
+#include <commands.h>
 #include <thread.h>
 #include <pit.h>
 #include <idt.h>
@@ -206,6 +206,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
 
+    create_command("help", run_help);
     create_command("badapple", run_badapple);
 
     create_idle_thread(idle_func);

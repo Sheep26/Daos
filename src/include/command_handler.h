@@ -3,10 +3,7 @@
 
 #include <stdint.h>
 
-#define MAX_COMMANDS 256
-
 typedef void (*func_t) ();
-
 struct command_s;
 
 typedef struct command_s {
@@ -15,6 +12,8 @@ typedef struct command_s {
     func_t function;
     struct command_s *next;
 } command_t;
+
+extern command_t *command_list;
 
 command_t *create_command(char *name, func_t function);
 void exec_command(char cmd[]);

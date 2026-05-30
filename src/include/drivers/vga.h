@@ -36,6 +36,7 @@ void reset_tty();
 void print_tty(const char *str);
 void clearln_tty(uint16_t ln);
 void scroll_tty();
+void newline_tty();
 void println_tty(const char *str);
 void backspace_tty();
 
