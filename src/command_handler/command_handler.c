@@ -19,8 +19,11 @@ void dump_commands() {
 command_t *create_command(char *name, char *description, cmd_func_t function) {
     command_t *command = (command_t*) calloc(1, sizeof(command_t));
 
-    command->name = name;
-    command->description = description;
+    command->name = malloc(sizeof(name));
+    command->description = malloc(sizeof(description));
+
+    strcpy(command->name, name);
+    strcpy(command->description, description);
 
     command->function = function;
     command->next = NULL;
