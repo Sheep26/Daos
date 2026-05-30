@@ -5,6 +5,10 @@
 
 char tty_input[TTY_BUF_SIZE] = {0};
 
+void tty_init() {
+    memset(tty_input, '\0', sizeof(tty_input));
+}
+
 void tty_input_handler(char c) {
     char buf[2] = {c, '\0'};
     size_t len = strlen(tty_input);
@@ -19,7 +23,7 @@ void tty_input_handler(char c) {
         case '\n':
             print_tty(buf);
             char cpyied[TTY_BUF_SIZE];
-            memcpy(cpyied, tty_input, sizeof(tty_input));
+            memcpy(cpyied, tty_input, strlen(tty_input) + 1);
             exec_command(cpyied);
 
             memset(tty_input, '\0', sizeof(tty_input));

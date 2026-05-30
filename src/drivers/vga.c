@@ -1,22 +1,25 @@
 #include <drivers/vga.h>
 #include <fs/vfs.h>
+#include <drivers/tty.h>
 
 vga_t vga;
 tty_t *tty;
 
 void setup_tty(font_t font) {
-	tty = calloc(1, sizeof(tty));
+	tty = malloc(sizeof(tty));
 
 	tty->tty_width = WIDTH;
 	tty->tty_height = HEIGHT;
 	tty->tty_x = 0;
 	tty->tty_y = 0;
 	tty->font = font;
+	tty_init();
 }
 
 void reset_tty() {
 	tty->tty_x = 0;
 	tty->tty_y = 0;
+	tty_init();
 }
 
 void newline_tty() {

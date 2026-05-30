@@ -2,25 +2,34 @@
 #include <string.h>
 #include <drivers/io.h>
 #include <drivers/vga.h>
+#include <itoa.h>
 
 command_t *command_list = NULL;
 
 void dump_commands() {
     command_t *pos = command_list;
+    char buf[32];
+
+    serial_println("Dump");
+    serial_print("cmd_list head: ");
+    itoa((uint32_t)command_list, buf, 10);
+    serial_println(buf);
 
     while (pos) {
         serial_print("Command: ");
-        serial_println(pos->name);
+
+        itoa(pos, buf, 10);
+        serial_println(buf);
 
         pos = pos->next;
     }
 }
 
 command_t *create_command(char *name, char *description, cmd_func_t function) {
-    command_t *command = (command_t*) calloc(1, sizeof(command_t));
+    command_t *command = (command_t*) malloc(sizeof(command_t));
 
-    command->name = malloc(sizeof(name));
-    command->description = malloc(sizeof(description));
+    command->name = malloc(strlen(name) + 1);
+    command->description = malloc(strlen(description) + 1);
 
     strcpy(command->name, name);
     strcpy(command->description, description);
