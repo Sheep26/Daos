@@ -1,0 +1,9 @@
+#ifndef TTY_H
+#define TTY_H
+
+#define TTY_BUF_SIZE 256
+extern char tty_input[TTY_BUF_SIZE];
+
+void tty_input_handler(char c);
+
+#endif

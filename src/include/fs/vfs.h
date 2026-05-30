@@ -103,6 +103,7 @@ typedef struct fs_directory {
 } fs_directory_t;
 
 extern fs_node_t *fs_root;
+extern char *cwd;
 
 extern int openpty(int * master, int * slave, char * name, void * _ign0, void * size);
 

@@ -1,42 +1,100 @@
 #include <drivers/vga.h>
+#include <fs/vfs.h>
 
 vga_t vga;
+tty_t *tty;
 
-void print_tty(const char *str, uint8_t attrib, tty_t *tty) {
-	while (*str) {
-		uint16_t vga_pos = tty->tty_y * tty->tty_width + tty->tty_x;
-		tty->vga_buffer[vga_pos] = (attrib << 8) | *str++;
+void setup_tty(font_t font) {
+	tty = calloc(1, sizeof(tty));
 
-		tty->tty_x++;
+	tty->tty_width = WIDTH;
+	tty->tty_height = HEIGHT;
+	tty->tty_x = 0;
+	tty->tty_y = 0;
+	tty->font = font;
+}
 
-		if (tty->tty_x >= tty->tty_width) {
-			tty->tty_x = 0;
-			tty->tty_y ++;
-		}
+void newline_tty() {
+	tty->tty_x = 0;
+	tty->tty_y++;
+
+	if (tty->tty_y > tty->tty_height) {
+		scroll_tty(tty);
+		tty->tty_y = tty->tty_height - 1;
 	}
 }
 
-void clearln_tty(uint8_t ln, tty_t *tty) {
-	for (uint8_t x = 0; x < tty->tty_width; x++)
-		tty->vga_buffer[ln * tty->tty_width + x] = (0x00 << 8) | ' ';
+void backspace_tty() {
+	if (tty->tty_x > strlen(cwd)) {
+		tty->tty_x--;
+
+		for (int y = 0; y < tty->font.font_height; y++)
+			for (int x = 0; x < tty->font.font_width; x++)
+				putpixel(tty->tty_x * tty->font.font_width + x, tty->tty_y * tty->font.font_height + y, 0x00000000);
+
+		flush_buffer();
+	}
+}
+
+void print_tty(const char *str) {
+	while (*str++) {
+		int progress = 1;
+		char c = *(str - 1);
+		
+		if (c == '\n') {
+			newline_tty();
+
+			progress = 0;
+		}
+
+		draw_char(c, tty->tty_x * tty->font.font_width, tty->tty_y * tty->font.font_height, 0x00FFFFFF, 0x00000000, tty->font);
+		flush_buffer();
+
+		if (progress)
+			tty->tty_x++;
+
+		if (tty->tty_x >= tty->tty_width)
+			newline_tty();
+	}
+}
+
+void clearln_tty(uint16_t ln) {
+    for (uint16_t y = 0; y < tty->font.font_height; y++)
+        for (uint16_t x = 0; x < tty->tty_width * tty->font.font_width; x++)
+            putpixel(x, ln * tty->font.font_height + y, 0x00000000);
+
+    flush_buffer();
 }
 
 void scroll_tty(tty_t *tty) {
-	for (uint8_t y = 0; y < tty->tty_height - 1; y++)
-		for (uint8_t x = 0; x < tty->tty_width; x++)
-			tty->vga_buffer[y * tty->tty_width + x] =
-				tty->vga_buffer[(y + 1) * tty->tty_width + x];
+    int line_height = tty->font.font_height;
+    int screen_width = tty->tty_width * tty->font.font_width;
+    int screen_height = tty->tty_height * line_height;
+
+    // Move all lines up by 1 line_height
+    for (int y = 0; y < screen_height - line_height; y++)
+        for (int x = 0; x < screen_width; x++)
+            // Copy pixel from the line below
+            putpixel(x, y, getpixel(x, y + line_height));
+
+    // Clear the last line
+    for (int y = screen_height - line_height; y < screen_height; y++)
+        for (int x = 0; x < screen_width; x++)
+            putpixel(x, y, 0x00000000);
+
+    flush_buffer();
 }
 
-void println_tty(const char *str, uint8_t attrib, tty_t *tty) {
-	print_tty(str, attrib, tty);
+void println_tty(const char *str) {
+	print_tty(str);
 
 	tty->tty_x = 0;
 	tty->tty_y++;
 
 	if (tty->tty_y >= tty->tty_height) {
 		scroll_tty(tty);
-		clearln_tty(tty->tty_height - 1, tty);
+		// clearln_tty(tty->tty_height - 1);
+
 		tty->tty_y = tty->tty_height - 1;
 	}
 }
@@ -80,13 +138,18 @@ void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
 	serial_println("VGA setup complete");
 }
 
+uint32_t getpixel(int x, int y) {
+    uint32_t bpp = vga.framebuffer_bpp / 8;
+    uint32_t pitch_pixels = vga.framebuffer_pitch / bpp;
+
+	return vga.framebuffer[y * pitch_pixels + x];
+}
+
 void putpixel(int x, int y, uint32_t colour) {
     uint32_t bpp = vga.framebuffer_bpp / 8;
     uint32_t pitch_pixels = vga.framebuffer_pitch / bpp;
 
-    if (x < 0 || y < 0 ||
-        x >= (int) vga.framebuffer_width ||
-        y >= (int) vga.framebuffer_height)
+    if (x < 0 || y < 0 || x >= (int) vga.framebuffer_width || y >= (int) vga.framebuffer_height)
         return;
 
     vga.backbuffer[y * pitch_pixels + x] = colour;

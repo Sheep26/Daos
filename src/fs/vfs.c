@@ -7,6 +7,7 @@
 
 tree_t *fs_tree = NULL; /* File system mountpoint tree */
 fs_node_t *fs_root = NULL; /* Pointer to the root mount fs_node (must be some form of filesystem, even ramdisk) */
+char *cwd = NULL;
 
 struct vfs_entry {
 	char * name;
@@ -488,6 +489,7 @@ void vfs_init() {
 	root->file = NULL; /* Nothing mounted as root */
 
 	tree_set_root(fs_tree, root);
+	cwd = "/";
 }
 
 /**
@@ -648,8 +650,6 @@ fs_node_t *kopen(char *filename, uint32_t flags) {
 	if (!fs_root || !filename)
 		return NULL;
 
-	/* Reference the current working directory */
-	char *cwd = "/";
 	/* Canonicalize the (potentially relative) path... */
 	char *path = canonicalize_path(cwd, filename);
 	/* And store the length once to save recalculations */

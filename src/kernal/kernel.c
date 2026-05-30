@@ -21,6 +21,7 @@
 #include <isr.h>
 #include <irq.h>
 #include <drivers/keyboard.h>
+#include <drivers/tty.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -39,19 +40,13 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 }
 
 void main_thread() {
-    while (1) {
-        char k = keyboard_key();
-        char buf[2] = {k, 0}; // null-terminate
+    serial_println("Entering main thread");
 
-        serial_print(buf);
-    }
+    setup_tty(font8x8_basic);
+    print_tty(cwd);
 
-    run_badapple();
-
-    fillscreen(0x00000000);
-    draw_string("It should worky.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
-
-    flush_buffer();
+    while (1)
+        tty_input_handler(keyboard_key());
 }
 
 void kernel_main(uint32_t magic, uint32_t addr) {
