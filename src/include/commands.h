@@ -12,5 +12,6 @@ void run_badapple(char *argv[], int argc);
 void run_help(char *argv[], int argc);
 void run_ls(char *argv[], int argc);
 void run_mkdir(char *argv[], int argc);
+void run_cat(char *argv[], int argc);
 
 #endif
