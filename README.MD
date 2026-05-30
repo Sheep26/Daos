@@ -6,6 +6,6 @@ Then run ./run.sh
 
 ## Prerequisites
 Python  
-*- opencv (needed to make bad apple binary)  
-*- numpy (needed to make bad apple binary)  
-*- yt-dlp (needed to download bad apple)
+&emsp;- opencv (needed to make bad apple binary)  
+&emsp;- numpy (needed to make bad apple binary)  
+&emsp;- yt-dlp (needed to download bad apple)
