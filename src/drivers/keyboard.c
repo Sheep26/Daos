@@ -125,6 +125,5 @@ void keyboard_handler(reg_t *r) {
     }
 
     unsigned char k = shift_press ? shift_kbdus[scancode & 0x7F] : kbdus[scancode & 0x7F];
-
     push(k, scancode & 0x80 ? 0 : 1);
 }
