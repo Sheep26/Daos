@@ -195,10 +195,10 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     pic_remap();
     init_irq();
 
-    set_irq_handler(0, timer_handler);
-
-    pit_set_frequency(PIT_FREQUENCY);
     enable_interrupts();
+    pit_set_frequency(PIT_FREQUENCY);
+
+    set_irq_handler(0, timer_handler);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
