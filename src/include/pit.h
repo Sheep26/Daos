@@ -8,6 +8,7 @@
 #define PIT_COMMAND   0x43
 
 #define PIT_BASE_FREQ 1193182
+#define PIT_FREQUENCY 1000
 
 void pit_set_frequency(uint32_t hz);
 void pic_remap();

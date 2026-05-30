@@ -1,5 +1,6 @@
 #include <badapple.h>
 #include <thread.h>
+#include <pit.h>
 
 void run_badapple() {
     fillscreen(0x00000000);
@@ -64,7 +65,7 @@ void run_badapple() {
             }
 
             flush_buffer();
-            thread_sleep(1000/48); // 48 fps, double speed.
+            thread_sleep(PIT_FREQUENCY/48); // 48 fps, double speed.
         }
     } else {
         draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);

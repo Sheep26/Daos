@@ -19,8 +19,6 @@
 #include <pic.h>
 #include <timer.h>
 
-#define PIC_FREQUENCY 1000
-
 cpu_t cpu;
 ata_t ata0;
 fat32_disk_t fat32_disk0;
@@ -203,7 +201,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     for (int i = 33; i < 48; i++)
         set_idt_gate(i, (uint32_t) irq_ignore);
 
-    pit_set_frequency(PIC_FREQUENCY);
+    pit_set_frequency(PIT_FREQUENCY);
     enable_interrupts();
 
     create_idle_thread(idle_func);
