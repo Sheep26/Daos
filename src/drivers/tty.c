@@ -18,10 +18,9 @@ void tty_input_handler(char c) {
             break;
         case '\n':
             print_tty(buf);
-            char *cpyied = malloc(sizeof(tty_input));
+            char cpyied[TTY_BUF_SIZE];
             memcpy(cpyied, tty_input, sizeof(tty_input));
             exec_command(cpyied);
-            free(cpyied);
 
             memset(tty_input, '\0', sizeof(tty_input));
             print_tty(cwd);
