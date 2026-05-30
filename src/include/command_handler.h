@@ -8,6 +8,7 @@ struct command_s;
 
 typedef struct command_s {
     char *name;
+    char *description;
 
     func_t function;
     struct command_s *next;
@@ -15,7 +16,7 @@ typedef struct command_s {
 
 extern command_t *command_list;
 
-command_t *create_command(char *name, func_t function);
+command_t *create_command(char *name, char *description, func_t function);
 void exec_command(char cmd[]);
 
 #endif

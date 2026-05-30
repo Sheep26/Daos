@@ -8,7 +8,8 @@
 
 #define TARGET_FPS 24 // Double speed.
 
-void run_badapple();
-void run_help();
+void run_badapple(char *args);
+void run_help(char *args);
+void run_ls(char *args);
 
 #endif

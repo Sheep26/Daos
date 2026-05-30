@@ -5,11 +5,14 @@
 
 command_t *command_list = NULL;
 
-command_t *create_command(char *name, func_t function) {
+command_t *create_command(char *name, char *description, func_t function) {
     command_t *command = (command_t*) calloc(1, sizeof(command_t));
 
     command->name = calloc(strlen(name) + 1, 1);
     strcpy(command->name, name);
+
+    command->description = calloc(strlen(description) + 1, 1);
+    strcpy(command->description, description);
 
     command->function = function;
 

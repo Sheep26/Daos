@@ -206,8 +206,8 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
 
-    create_command("help", run_help);
-    create_command("badapple", run_badapple);
+    create_command("help", "Open this menu", run_help);
+    create_command("badapple", "Run bad apple", run_badapple);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
