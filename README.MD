@@ -2,7 +2,7 @@
 
 ## How to run in QEMU.
 Please run ./install.sh (not as root) and follow the instructions provided.  
-Then you ./run.sh
+Then run ./run.sh
 
 ## Prerequisites
 Python  
