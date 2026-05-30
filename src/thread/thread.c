@@ -1,3 +1,11 @@
+/*
+ * This thread handler is really dumb.
+ * It will pick a thread and only leave it if it sleeps or finishes.
+ * It won't switch between waiting threads to handle multitasking.
+ * But it allows me to sleep the main thread so it is what it is.
+ * It also won't free up finished threads.
+*/
+
 #include <thread.h>
 
 k_thread_t *thread_list = NULL;
@@ -66,7 +74,7 @@ k_thread_t *create_idle_thread(void *function) {
     k_thread_t *thread = (k_thread_t *) calloc(1, sizeof(k_thread_t));
 
     thread->function = (func_t) function;
-    thread->stack = malloc(STACK_SIZE);
+    thread->stack = calloc(1, STACK_SIZE);
 
     thread_init_stack(thread);
 

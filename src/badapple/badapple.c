@@ -1,4 +1,5 @@
 #include <badapple.h>
+#include <thread.h>
 
 void run_badapple() {
     fillscreen(0x00000000);
@@ -18,7 +19,7 @@ void run_badapple() {
 
         serial_println(sizebuf);
 
-        uint8_t *badapple_data = malloc(badapple_file->length);
+        uint8_t *badapple_data = calloc(1, badapple_file->length);
         read_fs(badapple_file, 0, badapple_file->length, badapple_data);
 
         serial_println("Badapple loaded");
@@ -62,11 +63,8 @@ void run_badapple() {
                 }
             }
 
-            serial_print("Frame: ");
-            itoa(frame, buf, 10);
-            serial_println(buf);
-
             flush_buffer();
+            thread_sleep(1000/48); // 48 fps, double speed.
         }
     } else {
         draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);
