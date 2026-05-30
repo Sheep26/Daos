@@ -22,6 +22,7 @@ void tty_input_handler(char c) {
 
             memset(tty_input, '\0', sizeof(tty_input));
             print_tty(cwd);
+            print_tty(" ");
 
             break;
         default:

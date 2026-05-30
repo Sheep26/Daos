@@ -45,6 +45,7 @@ void main_thread() {
 
     setup_tty(font8x8_basic);
     print_tty(cwd);
+    print_tty(" ");
 
     while (1)
         tty_input_handler(keyboard_key());
@@ -211,6 +212,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("ls", "List files in a directory", run_ls);
     create_command("mkdir", "Make a new directory", run_mkdir);
     create_command("cat", "Read from directory", run_cat);
+    create_command("cd", "Change working directory", run_cd);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
