@@ -3,7 +3,7 @@
 #include <pit.h>
 #include <timer.h>
 
-void run_badapple() {
+void run_badapple(char *argv[], int argc) {
     fillscreen(0x00000000);
     draw_string("Bad Apple Loading", 8, 8, 0x00FFFFFFFF, 0x00000000, font8x8_basic);
     serial_println("Loading Bad Apple");

@@ -5,13 +5,24 @@
 
 command_t *command_list = NULL;
 
+void dump_commands() {
+    command_t *pos = command_list;
+
+    while (pos) {
+        serial_print("Command: ");
+        serial_println(pos->name);
+
+        pos = pos->next;
+    }
+}
+
 command_t *create_command(char *name, char *description, func_t function) {
     command_t *command = (command_t*) calloc(1, sizeof(command_t));
 
-    command->name = calloc(strlen(name) + 1, 1);
+    command->name = calloc(1, strlen(name) + 1);
     strcpy(command->name, name);
 
-    command->description = calloc(strlen(description) + 1, 1);
+    command->description = calloc(1, strlen(description) + 1);
     strcpy(command->description, description);
 
     command->function = function;
@@ -45,6 +56,7 @@ command_t *find_command(char *name) {
 }
 
 void exec_command(char cmd[]) {
+    dump_commands();
     int i = 0;
 
     // skip leading spaces

@@ -1,7 +1,7 @@
 #include <commands.h>
 #include <command_handler.h>
 
-void run_help() {
+void run_help(char *argv[], int argc) {
     println_tty("Commands");
 
     command_t *pos = command_list;

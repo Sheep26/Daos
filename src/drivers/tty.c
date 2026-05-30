@@ -6,7 +6,7 @@
 char tty_input[TTY_BUF_SIZE] = {0};
 
 void tty_input_handler(char c) {
-    char *buf[2] = {c, 0};
+    char buf[2] = {c, '\0'};
     size_t len = strlen(tty_input);
 
     switch (c) {

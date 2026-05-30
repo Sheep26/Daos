@@ -209,6 +209,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("help", "Open this menu", run_help);
     create_command("badapple", "Run bad apple", run_badapple);
     create_command("ls", "List files in a directory", run_ls);
+    create_command("mkdir", "Make a new directory", run_mkdir);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
