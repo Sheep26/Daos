@@ -9,10 +9,11 @@ void run_cd(char *argv[], int argc) {
 
     fs_node_t *file = kopen(argv[0], 0);
 
-    if (file) {
+    if (file)
         cwd = canonicalize_path(cwd, argv[0]);
-        return;
-    }
-
-    println_tty("Path not found");
+    else
+        println_tty("Path not found");
+    
+    close_fs(file);
+    free(file);
 }

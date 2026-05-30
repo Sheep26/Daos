@@ -15,8 +15,10 @@ void run_cat(char *argv[], int argc) {
         read_fs(file, 0, file->length, buf);
 
         println_tty(buf);
-        return;
-    }
-
-    println_tty("File not found");
+        free(buf);
+        close_fs(file);
+    } else
+        println_tty("File not found");
+    
+    free(file);
 }

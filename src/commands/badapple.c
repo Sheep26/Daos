@@ -77,6 +77,8 @@ void run_badapple(char *argv[], int argc) {
 
             thread_sleep(ticks_per_frame - ticks_taken);
         }
+
+        free(badapple_data);
     } else {
         draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);
         serial_println("Bad Apple not found");
@@ -84,6 +86,9 @@ void run_badapple(char *argv[], int argc) {
         flush_buffer();
         thread_sleep(5000);
     }
+
+    close_fs(badapple_file);
+    free(badapple_file);
 
     reset_tty();
 }
