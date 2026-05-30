@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define MAX_ARGS 32
+
 typedef void (*func_t) ();
 struct command_s;
 

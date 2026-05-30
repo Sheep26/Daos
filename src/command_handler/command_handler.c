@@ -67,6 +67,17 @@ void exec_command(char cmd[]) {
 
     char *args = &cmd[i];
 
+    char *argv[MAX_ARGS];
+    int argc = 0;
+
+    char *saveptr;
+    char *token = strtok_r(args, " ", &saveptr);
+
+    while (token && argc < MAX_ARGS) {
+        argv[argc++] = token;
+        token = strtok_r(NULL, " ", &saveptr);
+    }
+
     command_t *command = find_command(name);
 
     if (!command) {
@@ -76,5 +87,5 @@ void exec_command(char cmd[]) {
         return;
     }
 
-    command->function(args);
+    command->function(argv, argc);
 }

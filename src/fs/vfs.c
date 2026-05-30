@@ -264,6 +264,9 @@ tree_node_t *vfs_get_tree_node(char *path) {
 }
 
 int ls_fs(char *name, fs_directory_t *out) {
+	if (!name)
+		name = cwd;
+
 	fs_node_t *node = kopen(name, 0);
 
 	if (!node)
@@ -369,7 +372,7 @@ fs_node_t *clone_fs(fs_node_t *source) {
  * @param input Path to append or canonicalize on
  * @returns An absolute path string
  */
-char *canonicalize_path(char *cwd, char *input) {
+char *canonicalize_path(char *wd, char *input) {
 	/* This is a stack-based canonicalizer; we use a list as a stack */
 	list_t *out = list_create();
 
@@ -379,8 +382,8 @@ char *canonicalize_path(char *cwd, char *input) {
 	 */
 	if (strlen(input) && input[0] != PATH_SEPARATOR) {
 		/* Make a copy of the working directory */
-		char *path = malloc((strlen(cwd) + 1) * sizeof(char));
-		memcpy(path, cwd, strlen(cwd) + 1);
+		char *path = malloc((strlen(wd) + 1) * sizeof(char));
+		memcpy(path, wd, strlen(wd) + 1);
 
 		/* Setup tokenizer */
 		char *pch;
