@@ -119,15 +119,12 @@ void keyboard_handler(reg_t *r) {
     uint8_t scancode = inb(KEYBOARD_DATA);
 
     if((scancode & 0x7F) == 0x2A || (scancode & 0x7F) == 0x36){
-        shift_press = scancode & 0x80;
+        shift_press = (scancode & 0x80) ? 0 : 1;
 
         return;
     }
 
     unsigned char k = shift_press ? shift_kbdus[scancode & 0x7F] : kbdus[scancode & 0x7F];
 
-    if(scancode & 0x80)
-        push(k, 0);
-    else
-        push(k, 1);
+    push(k, scancode & 0x80 ? 0 : 1);
 }
