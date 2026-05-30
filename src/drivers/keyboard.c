@@ -123,8 +123,6 @@ void flush_keyboard() {
 void keyboard_handler(reg_t *r) {
     uint8_t scancode = inb(KEYBOARD_DATA);
 
-    serial_println("Rah");
-
     if((scancode & 0x7F) == 0x2A || (scancode & 0x7F) == 0x36){
         shift_press = (scancode & 0x80) ? 0 : 1;
 
