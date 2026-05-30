@@ -1,6 +1,7 @@
 #include <drivers/tty.h>
 #include <drivers/vga.h>
 #include <fs/vfs.h>
+#include <command_handler.h>
 
 char tty_input[TTY_BUF_SIZE] = {0};
 
@@ -17,6 +18,11 @@ void tty_input_handler(char c) {
             break;
         case '\n':
             print_tty(buf);
+            exec_command(tty_input);
+
+            memset(tty_input, '\0', sizeof(tty_input));
+            print_tty(cwd);
+
             break;
         default:
             if (len < TTY_BUF_SIZE - 1) {

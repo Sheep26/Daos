@@ -22,6 +22,7 @@
 #include <irq.h>
 #include <drivers/keyboard.h>
 #include <drivers/tty.h>
+#include <command_handler.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -203,6 +204,8 @@ void kernel_main(uint32_t magic, uint32_t addr) {
 
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
+
+    create_command("badapple", run_badapple);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
