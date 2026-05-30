@@ -5,6 +5,7 @@
 
 #define KEYBOARD_DATA 0x60
 #define KEYBOARD_CONTROL 0x64
+#define KEYBOARD_OBF 0x01
 
 typedef struct {
     unsigned char key;
@@ -21,5 +22,6 @@ typedef struct {
 
 void keyboard_handler(reg_t *r);
 char keyboard_key();
+void flush_keyboard();
 
 #endif

@@ -14,6 +14,11 @@ void setup_tty(font_t font) {
 	tty->font = font;
 }
 
+void reset_tty() {
+	tty->tty_x = 0;
+	tty->tty_y = 0;
+}
+
 void newline_tty() {
 	tty->tty_x = 0;
 	tty->tty_y++;

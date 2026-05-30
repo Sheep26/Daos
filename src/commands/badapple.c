@@ -82,5 +82,8 @@ void run_badapple() {
         serial_println("Bad Apple not found");
 
         flush_buffer();
+        thread_sleep(5000);
     }
+
+    reset_tty();
 }

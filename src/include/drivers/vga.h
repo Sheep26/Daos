@@ -31,6 +31,7 @@ typedef struct {
 } vga_t;
 
 void setup_tty(font_t font);
+void reset_tty();
 
 void print_tty(const char *str);
 void clearln_tty(uint16_t ln);

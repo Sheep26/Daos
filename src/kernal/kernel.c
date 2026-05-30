@@ -199,6 +199,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     pic_remap();
     init_irq();
 
+    flush_keyboard();
     enable_interrupts();
     pit_set_frequency(PIT_FREQUENCY);
 
