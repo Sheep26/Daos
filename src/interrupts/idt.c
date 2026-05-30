@@ -21,11 +21,6 @@ void init_idt() {
     idt_ptr.limit = sizeof(idt_entry_t) * 256 - 1;
     idt_ptr.base = (uint32_t) idt;
 
-    char buf[32];
-    itoa(idt_ptr.base, buf, 10);
-    serial_print("IDT PTR: ");
-    serial_println(buf);
-
     memset(idt, 0, sizeof(idt_entry_t) * 256);
     idt_load(&idt_ptr);
 }

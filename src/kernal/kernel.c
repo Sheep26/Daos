@@ -20,6 +20,7 @@
 #include <timer.h>
 #include <isr.h>
 #include <irq.h>
+#include <drivers/keyboard.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -38,6 +39,13 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 }
 
 void main_thread() {
+    while (1) {
+        char k = keyboard_key();
+        char buf[2] = {k, 0}; // null-terminate
+
+        serial_print(buf);
+    }
+
     run_badapple();
 
     fillscreen(0x00000000);
@@ -199,6 +207,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     pit_set_frequency(PIT_FREQUENCY);
 
     set_irq_handler(0, timer_handler);
+    set_irq_handler(1, keyboard_handler);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);
