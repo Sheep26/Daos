@@ -18,6 +18,8 @@
 #include <idt.h>
 #include <pic.h>
 #include <timer.h>
+#include <isr.h>
+#include <irq.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -25,9 +27,6 @@ fat32_disk_t fat32_disk0;
 
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
-
-extern void irq0();
-extern void irq_ignore();
 
 void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_size) {
     if (strcmp(mod->cmdline, name) == 0) {
@@ -191,15 +190,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         serial_println(fs_dir.nodes[i].name);
 
     init_idt();
-
-    for (int i = 0; i < 32; i++)
-        set_idt_gate(i, (uint32_t) irq_ignore);
+    init_isr();
 
     pic_remap();
-    set_idt_gate(32, (uint32_t) irq0);
+    init_irq();
 
-    for (int i = 33; i < 48; i++)
-        set_idt_gate(i, (uint32_t) irq_ignore);
+    set_irq_handler(0, timer_handler);
 
     pit_set_frequency(PIT_FREQUENCY);
     enable_interrupts();

@@ -12,6 +12,12 @@ for file in src/*.s; do
     i686-elf-as -c "$file" -o "build/$name.o"
 done
 
+for file in src/*.S; do
+    name=$(basename "$file" .S)
+
+    i686-elf-gcc -c "$file" -o "build/$name.o" -ffreestanding -O2 -Wall -Wextra
+done
+
 for file in libc/*/*.c; do
     name=$(basename "$file" .c)
 
