@@ -74,7 +74,7 @@ void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
 	vga.framebuffer_bpp = fb_tag->framebuffer_bpp;
 	vga.framebuffer_type = fb_tag->framebuffer_type;
 
-	uint32_t *backbuffer = malloc(vga.framebuffer_height * vga.framebuffer_pitch);
+	uint32_t *backbuffer = calloc(1, vga.framebuffer_height * vga.framebuffer_pitch);
 	vga.backbuffer = backbuffer;
 
 	serial_println("VGA setup complete");
@@ -128,6 +128,6 @@ void draw_string(const char *s, int x, int y, uint32_t fg, uint32_t bg, font_t f
 }
 
 void flush_buffer() {
-    for (uint32_t pixel = 0; pixel <= vga.framebuffer_height * (vga.framebuffer_pitch/4); pixel++)
+    for (uint32_t pixel = 0; pixel < vga.framebuffer_height * (vga.framebuffer_pitch/4); pixel++)
 		vga.framebuffer[pixel] = vga.backbuffer[pixel];
 }

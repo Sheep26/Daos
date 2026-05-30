@@ -1,6 +1,7 @@
 #include <badapple.h>
 #include <thread.h>
 #include <pit.h>
+#include <timer.h>
 
 void run_badapple() {
     fillscreen(0x00000000);
@@ -50,6 +51,8 @@ void run_badapple() {
         uint32_t frames = badapple_file->length / bytes_per_frame;
 
         for (uint32_t frame = 0; frame < frames; frame++) {
+            uint64_t start_ticks = timer_ticks;
+
             for (uint32_t y = 0; y < badapple_height; y++) {
                 for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
                     uint8_t row_byte = badapple_data[frame * bytes_per_frame + y * bytes_per_row + byte];
@@ -65,7 +68,14 @@ void run_badapple() {
             }
 
             flush_buffer();
-            thread_sleep(PIT_FREQUENCY/48); // 48 fps, double speed.
+
+            uint64_t ticks_per_frame = PIT_FREQUENCY / TARGET_FPS;
+            uint64_t ticks_taken = timer_ticks - start_ticks;
+
+            if (ticks_taken > ticks_per_frame)
+                ticks_taken = ticks_per_frame;
+
+            thread_sleep(ticks_per_frame - ticks_taken);
         }
     } else {
         draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);
