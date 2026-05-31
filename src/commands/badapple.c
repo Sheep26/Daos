@@ -4,14 +4,13 @@
 #include <timer.h>
 
 void run_badapple(char *argv[], int argc) {
-    fillscreen(0x00000000);
-    draw_string("Bad Apple Loading", 8, 8, 0x00FFFFFFFF, 0x00000000, font8x8_basic);
+    println_tty("Loading Bad Apple");
     serial_println("Loading Bad Apple");
 
     flush_buffer();
 
     char buf[32];
-    fs_node_t *badapple_file = kopen("/fsroot/BADAPPLE.BIN", 0);
+    fs_node_t *badapple_file = kopen("/BADAPPLE.BIN", 0);
 
     if (badapple_file) {
         serial_print("Badapple size: ");
@@ -24,6 +23,7 @@ void run_badapple(char *argv[], int argc) {
         uint8_t *badapple_data = calloc(1, badapple_file->length);
         read_fs(badapple_file, 0, badapple_file->length, badapple_data);
 
+        println_tty("Badapple loaded");
         serial_println("Badapple loaded");
 
         /* for (uint32_t i = 0; i < badapple_file->length; i++) {
@@ -78,17 +78,12 @@ void run_badapple(char *argv[], int argc) {
             thread_sleep(ticks_per_frame - ticks_taken);
         }
 
-        free(badapple_data);
+        reset_tty();
     } else {
-        draw_string("Bad Apple not found", 8, 20, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        println_tty("Bad Apple not found");
         serial_println("Bad Apple not found");
-
-        flush_buffer();
-        thread_sleep(5000);
     }
 
     close_fs(badapple_file);
     free(badapple_file);
-
-    reset_tty();
 }

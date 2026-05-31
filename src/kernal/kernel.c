@@ -42,8 +42,18 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 
 void main_thread() {
     serial_println("Entering main thread");
+    fs_directory_t fs_dir;
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
+    ls_fs("/", &fs_dir);
 
-    setup_tty(font8x8_basic);
     print_tty(cwd);
     print_tty(" ");
 
@@ -141,10 +151,11 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_println(cpu.vendor);
 
     setup_vga(fb_tag);
+    setup_tty(font8x8_basic);
 
     vfs_init();
-    vfs_mount("/", ramfs_create());
-    vfs_mount("/dev/null", null_device_create());
+    //vfs_mount("/", ramfs_create());
+    //vfs_mount("/dev/null", null_device_create());
 
     init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
     int ata0_indenify = ata_identify(&ata0);
@@ -170,24 +181,24 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         return;
     }
 
-    vfs_mount("/fsroot", fat_mount_create(&fat32_disk0, "FSROOT"));
+    vfs_mount("/", fat_mount_create(&fat32_disk0, "FSROOT"));
 
     char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
-    // mkdir_fs("/fsroot/WOO", 0);
-    // rm_fs("/fsroot/WOO");
-    // create_file_fs("/fsroot/Wooo.txt", wooo, sizeof(wooo), 0);
+    // mkdir_fs("/WOO", 0);
+    // rm_fs("/WOO");
+    // create_file_fs("/Wooo.txt", wooo, sizeof(wooo), 0);
 
-    fs_node_t *file = kopen("/fsroot/itworkie.txt", 0);
+    fs_node_t *file = kopen("/itworkie.txt", 0);
 
     if (!file)
-        create_file_fs("/fsroot/itworkie.txt", wooo, sizeof(wooo), 0);
+        create_file_fs("/itworkie.txt", wooo, sizeof(wooo), 0);
 
     close_fs(file);
     free(file);
 
     fs_directory_t fs_dir;
-    ls_fs("/fsroot", &fs_dir);
+    ls_fs("/", &fs_dir);
 
     serial_println("FS root");
 
