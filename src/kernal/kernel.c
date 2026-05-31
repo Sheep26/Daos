@@ -42,17 +42,6 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 
 void main_thread() {
     serial_println("Entering main thread");
-    fs_directory_t fs_dir;
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
-    ls_fs("/", &fs_dir);
 
     print_tty(cwd);
     print_tty(" ");
