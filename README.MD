@@ -5,6 +5,7 @@ Bad Apple
 Fat32 Filesystem  
 Virtual Filesystem  
 Terminal  
+Help Page  
 
 ## How to run in QEMU.
 Please run ./install.sh (not as root) and follow the instructions provided.  

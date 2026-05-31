@@ -46,6 +46,3 @@ if command -v sudo &> /dev/null; then
 else
     umount /mnt/daos
 fi
-
-echo "Running OS"
-./run.sh
