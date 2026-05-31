@@ -33,7 +33,7 @@ void newline_tty() {
 }
 
 void backspace_tty() {
-	if (tty->tty_x > strlen(cwd)) {
+	if (tty->tty_x > strlen(cwd) + 1) {
 		tty->tty_x--;
 
 		for (int y = 0; y < tty->font.font_height; y++)
