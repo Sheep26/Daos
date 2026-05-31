@@ -1,10 +1,10 @@
 # DaOS
 
 ## Features
-Bad Apple
-Fat32 Filesystem
-Virtual Filesystem
-Terminal
+Bad Apple  
+Fat32 Filesystem  
+Virtual Filesystem  
+Terminal  
 
 ## How to run in QEMU.
 Please run ./install.sh (not as root) and follow the instructions provided.  
