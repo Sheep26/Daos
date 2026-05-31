@@ -2,9 +2,8 @@
 #include <command_handler.h>
 
 void run_help(char *argv[], int argc) {
-    println_tty("Commands");
-
     command_t *pos = command_list;
+    println_tty("Commands");
 
     while (pos) {
         newline_tty();

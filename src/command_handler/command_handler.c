@@ -6,25 +6,6 @@
 
 command_t *command_list = NULL;
 
-void dump_commands() {
-    command_t *pos = command_list;
-    char buf[32];
-
-    serial_println("Dump");
-    serial_print("cmd_list head: ");
-    itoa((uint32_t)command_list, buf, 10);
-    serial_println(buf);
-
-    while (pos) {
-        serial_print("Command: ");
-
-        itoa(pos->magic, buf, 16);
-        serial_println(buf);
-
-        pos = pos->next;
-    }
-}
-
 command_t *create_command(char *name, char *description, cmd_func_t function) {
     command_t *command = (command_t*) malloc(sizeof(command_t));
 
@@ -68,7 +49,6 @@ command_t *find_command(char *name) {
 }
 
 void exec_command(char cmd[]) {
-    dump_commands();
     int i = 0;
 
     // skip leading spaces
