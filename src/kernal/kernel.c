@@ -213,6 +213,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("mkdir", "Make a new directory", run_mkdir);
     create_command("cat", "Read from directory", run_cat);
     create_command("cd", "Change working directory", run_cd);
+    create_command("hello", "Prints hello world", run_hello);
 
     create_idle_thread(idle_func);
     create_new_thread(main_thread);

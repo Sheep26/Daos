@@ -14,5 +14,6 @@ void run_ls(char *argv[], int argc);
 void run_mkdir(char *argv[], int argc);
 void run_cat(char *argv[], int argc);
 void run_cd(char *argv[], int argc);
+void run_hello(char *argv[], int argc);
 
 #endif
