@@ -8,8 +8,7 @@ Terminal
 Help Page  
 
 ## How to run in QEMU.
-Please run ./install.sh (not as root) and follow the instructions provided.  
-Then run ./run.sh
+Please download both daos.iso and disk.img from releases
 
 ## Prerequisites
 Python  
@@ -19,3 +18,7 @@ Python
 i686-elf-gcc  
 i686-elf-ld  
 i686-elf-as  
+
+## Recomended Specs.
+Ram: 512MiB (Could work with less but this was what I picked)  
+Storage: 512MiB (could work with less but this was what I picked)  

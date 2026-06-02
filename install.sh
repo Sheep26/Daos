@@ -1,3 +1,5 @@
+argv=("$@")
+
 if [ -f "badapple.bin" ]; then
     rm badapple.bin
 fi
@@ -7,12 +9,12 @@ if [ -f "badapple.mp4" ]; then
 fi
 
 ./mkdisk.sh
-./build.sh
+#./build.sh
 
 clear
 echo "Running os to format disk"
 sleep 1
-./run.sh
+./run.sh "${argv[0]}"
 
 clear
 echo "Mounting disk to upload Bad Apple. (This requires root)"
