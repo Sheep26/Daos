@@ -7,5 +7,6 @@
 extern uint8_t log_tty;
 
 void k_log(char *s);
+void k_logln(char *s);
 
 #endif

@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <drivers/vga.h>
-#include <drivers/cpu.h>
+#include <drivers/system.h>
 #include <drivers/io.h>
 #include <multiboot.h>
 #include <itoa.h>
@@ -25,10 +25,6 @@
 #include <command_handler.h>
 #include <logging.h>
 
-cpu_t cpu;
-ata_t ata0;
-fat32_disk_t fat32_disk0;
-
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
 
@@ -42,7 +38,7 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 }
 
 void main_thread() {
-    k_log("Entering main thread");
+    k_logln("Entering main thread");
 
     clear_tty();
     reset_tty();
@@ -121,13 +117,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
         while (1);
     }
 
-    serial_println("Setup multiboot");
-
-    char buf[32];
-    itoa(total_usable_ram / (1024 * 1024), buf, 10);
-    serial_print("Usable RAM: ");
-    serial_print(buf);
-    serial_println("MB");
+    k_log("Setup multiboot");
 
     // Init pmm and heap.
     pmm_init(mmap_entries, max_addr, mmap_entry_count, (uint32_t) &_kernel_end);
@@ -138,39 +128,58 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_println("Initalising heap.");
     heap_init(pmm_bitmap_location + pmm_bitmap_size);
 
-    cpu_init(&cpu);
-
-    serial_print("CPU Vendor: ");
-    serial_println(cpu.vendor);
+    system_t *system = (system_t*) calloc(1, sizeof(system_t));
+    system->total_usable_ram = total_usable_ram;
 
     vga_init(fb_tag);
     tty_init(font8x8_basic);
+	log_tty = 1;
 
+    cpu_init(system->cpu);
+
+    char buf[32];
+    itoa(system->total_usable_ram / (1024 * 1024), buf, 10);
+    k_log("Usable RAM: ");
+    k_log(buf);
+    k_logln("MB");
+
+    k_log("CPU Vendor: ");
+    k_logln(system->cpu->vendor);
+
+    k_logln("Init VFS");
     vfs_init();
+
     //vfs_mount("/", ramfs_create());
     //vfs_mount("/dev/null", null_device_create());
 
-    init_ata(&ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
-    int ata0_indenify = ata_identify(&ata0);
+    k_logln("Init ata0");
+    ata_t *ata0 = (ata_t *) calloc(1, sizeof(ata_t));
+
+    init_ata(ata0, ATA_PRIMARY_DATA, ATA_PRIMARY_ERR, ATA_PRIMARY_SECCOUNT, ATA_PRIMARY_LBA_LOW, ATA_PRIMARY_LBA_MID, ATA_PRIMARY_LBA_HIGH, ATA_PRIMARY_DRIVE_SEL, ATA_PRIMARY_COMMAND, ATA_PRIMARY_STATUS, 0);
+    int ata0_indenify = ata_identify(ata0);
 
     if (!ata0_indenify) {
-        k_log("ERROR: Disk 0 not found");
+        k_logln("ERROR: ATA 0 not found");
 
         return;
     }
 
-    if (!fat_disk_init(&fat32_disk0, &ata0)) {
-        k_log("Formatting disk");
+    k_logln("Init fat32_disk0");
+    fat32_disk_t *fat32_disk0 = (fat32_disk_t *) calloc(1, sizeof(fat32_disk_t));
 
-        fat_format(&fat32_disk0, "Disk");
+    if (!fat_disk_init(fat32_disk0, ata0)) {
+        k_logln("Formatting disk");
+
+        fat_format(fat32_disk0, "Disk");
 
         fillscreen(0x00000000);
-        k_log("Disk Formatted, please close the os.");
+        k_logln("Disk Formatted, please close the os.");
 
         return;
     }
 
-    vfs_mount("/", fat_mount_create(&fat32_disk0, "FSROOT"));
+    k_logln("Mouting fat32_disk0");
+    vfs_mount("/", fat_mount_create(fat32_disk0, "FSROOT"));
 
     char wooo[] = "Wowwwwie we get data in the file wooooooo.";
 
@@ -186,37 +195,39 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     close_fs(file);
     free(file);
 
-    fs_directory_t fs_dir;
-    ls_fs("/", &fs_dir);
+    fs_directory_t *fs_dir = (fs_directory_t *) calloc(1, sizeof(fs_directory_t));
+    ls_fs("/", fs_dir);
 
-    k_log("FS root");
+    k_logln("FS root");
 
-    for (int i = 0; i < fs_dir.count; i++)
-        k_log(fs_dir.nodes[i].name);
+    for (int i = 0; i < fs_dir->count; i++)
+        k_logln(fs_dir->nodes[i].name);
+    
+    free(fs_dir);
 
-    k_log("Init idt");
+    k_logln("Init idt");
     init_idt();
 
-    k_log("Init isr");
+    k_logln("Init isr");
     init_isr();
 
-    k_log("PIC remap");
+    k_logln("PIC remap");
     pic_remap();
 
-    k_log("Init irq");
+    k_logln("Init irq");
     init_irq();
 
-    flush_keyboard();
-
-    k_log("Enabling interrupts");
+    k_logln("Enabling interrupts");
     enable_interrupts();
 
-    k_log("Setting PIC frequency");
+    k_logln("Setting PIC frequency");
     pit_set_frequency(PIT_FREQUENCY);
 
-    k_log("Setting irq handlers.");
+    k_logln("Setting irq handlers.");
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
+
+    flush_keyboard();
 
     create_command("help", "Open this menu", run_help);
     create_command("badapple", "Run bad apple", run_badapple);
@@ -226,12 +237,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("cd", "Change working directory", run_cd);
     create_command("hello", "Prints hello world", run_hello);
 
-    k_log("Creating idle thread");
+    k_logln("Creating idle thread");
     create_idle_thread(idle_func);
 
-    k_log("Creating main thread");
+    k_logln("Creating main thread");
     create_new_thread(main_thread);
 
-    k_log("Running schedular");
+    k_logln("Running schedular");
     scheduler_run();
 }

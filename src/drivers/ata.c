@@ -1,4 +1,5 @@
 #include <drivers/ata.h>
+#include <logging.h>
 
 int ata_ids = 0;
 
@@ -40,13 +41,11 @@ int wait_drq(ata_t *ata) {
 
 int ata_exists(ata_t *ata) {
     uint8_t sel = ata->slave ? 0xB0 : 0xA0;
-
     outb(ata->drive_sel, sel);
 
     for(int i=0; i<10; i++) ata_io_wait(ata); // Wait a bit longer for selection
-    
+
     uint8_t status = inb(ata->status);
-    
     return status != 0xFF;
 }
 
@@ -83,7 +82,7 @@ int ata_identify(ata_t *ata) {
         return 0;
 
     if (!wait_bsy(ata)) {
-        serial_print("[ATA] Identify: Timeout waiting for BSY\n");
+        k_logln("ATA Identify: Timeout waiting for BSY");
 
         return 0;
     }
@@ -110,8 +109,7 @@ int ata_identify(ata_t *ata) {
             // For now just skip.
             return 0;
 
-        serial_print("[ATA] Identify: Timeout waiting for DRQ\n");
-
+        k_logln("ATA Identify: Timeout waiting for DRQ");
         return 0;
     }
     
@@ -139,20 +137,15 @@ int ata_identify(ata_t *ata) {
     char itoa_buf[32];
     itoa(ata->identifier, itoa_buf, 10);
 
-    serial_print("ATA indntify: ATA");
-    serial_print(itoa_buf);
-    serial_print("\n");
+    k_log("ATA Identify: ATA");
+    k_logln(itoa_buf);
 
-    serial_print("Model: ");
-    serial_print(ata->model);
-    serial_print("\n");
-
-    serial_print("Sectors: ");
+    k_log("Model: ");
+    k_logln(ata->model);
 
     itoa(ata->sectors, itoa_buf, 10);
-
-    serial_print(itoa_buf);
-    serial_print("\n");
+    k_log("Sectors: ");
+    k_logln(itoa_buf);
 
     return 1;
 }

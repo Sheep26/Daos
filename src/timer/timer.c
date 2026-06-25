@@ -13,7 +13,7 @@ void timer_handler(reg_t *r) {
 
     k_thread_t *t = thread_list;
 
-    if (timer_ticks % 16 == 0)
+    if (timer_ticks % 4 == 0)
         reschedule_needed = 1;
 
     while (t) {
