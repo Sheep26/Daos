@@ -43,6 +43,8 @@ void main_thread() {
     k_logln("Entering main thread");
 
     if (system->cpu->apic_supported) {
+        // APIC is so borked.
+
         //k_logln("APIC available, enabling APIC.");
         //apic_enable();
     }
