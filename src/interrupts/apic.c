@@ -44,25 +44,9 @@ void apic_enable() {
 }
 
 void apic_timer_handler() {
-    serial_println("Rah");
     apic_ticks++;
     apic_ms_passed = apic_ticks / apic_ticks_per_ms;
 
-    if (apic_ticks % 4 == 0)
-        reschedule_needed = 1;
-    
-    k_thread_t *t = thread_list;
-
-    while (t) {
-        if (t->state == BLOCKED && t->wake_tick != 0 && apic_ticks >= t->wake_tick) {
-            t->state = WAITING;
-
-            t->wake_tick = 0;
-            reschedule_needed = 1;
-        }
-
-        t = t->next;
-    }
-
+    schedular_tick();
     LAPIC_REG(LAPIC_EOI) = 0;
 }

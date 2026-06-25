@@ -179,6 +179,24 @@ void scheduler_add(k_thread_t *thread) {
     current->next = thread;
 }
 
+void schedular_tick() {
+    if (get_ticks() % 4 == 0)
+        reschedule_needed = 1;
+
+    k_thread_t *t = thread_list;
+
+    while (t) {
+        if (t->state == BLOCKED && t->wake_tick != 0 && get_ticks() >= t->wake_tick) {
+            t->state = WAITING;
+
+            t->wake_tick = 0;
+            reschedule_needed = 1;
+        }
+
+        t = t->next;
+    }
+}
+
 void scheduler_run() {
     if (!thread_list)
         return;

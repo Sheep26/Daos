@@ -17,20 +17,6 @@ void pit_timer_handler(reg_t *r) {
 
     if (pit_ticks % (PIT_FREQUENCY / 1000) == 0)
         pit_ms_passed++;
-
-    if (pit_ticks % 4 == 0)
-        reschedule_needed = 1;
-
-    k_thread_t *t = thread_list;
-
-    while (t) {
-        if (t->state == BLOCKED && t->wake_tick != 0 && pit_ticks >= t->wake_tick) {
-            t->state = WAITING;
-
-            t->wake_tick = 0;
-            reschedule_needed = 1;
-        }
-
-        t = t->next;
-    }
+    
+    schedular_tick();
 }
