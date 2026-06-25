@@ -8,3 +8,29 @@ void pit_set_frequency(uint32_t hz) {
     outb(PIT_CHANNEL0, divisor & 0xFF);
     outb(PIT_CHANNEL0, (divisor >> 8) & 0xFF);
 }
+
+uint64_t pit_ticks = 0;
+uint64_t pit_ms_passed = 0;
+
+void pit_timer_handler(reg_t *r) {
+    pit_ticks++;
+
+    if (pit_ticks % (PIT_FREQUENCY / 1000) == 0)
+        pit_ms_passed++;
+
+    if (pit_ticks % 4 == 0)
+        reschedule_needed = 1;
+
+    k_thread_t *t = thread_list;
+
+    while (t) {
+        if (t->state == BLOCKED && t->wake_tick != 0 && pit_ticks >= t->wake_tick) {
+            t->state = WAITING;
+
+            t->wake_tick = 0;
+            reschedule_needed = 1;
+        }
+
+        t = t->next;
+    }
+}

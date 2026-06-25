@@ -24,6 +24,8 @@
 #include <drivers/tty.h>
 #include <command_handler.h>
 #include <logging.h>
+#include <apic.h>
+#include <drivers/system.h>
 
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
@@ -39,6 +41,11 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 
 void main_thread() {
     k_logln("Entering main thread");
+
+    if (system->cpu->apic_supported) {
+        //k_logln("APIC available, enabling APIC.");
+        //apic_enable();
+    }
 
     clear_tty();
     reset_tty();
@@ -128,8 +135,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     k_logln("Initalising heap.");
     heap_init(pmm_bitmap_location + pmm_bitmap_size);
 
-    system_t *system = (system_t*) calloc(1, sizeof(system_t));
-    system->cpu = (cpu_t*) calloc(1, sizeof(cpu_t));
+    system_init();
     system->total_usable_ram = total_usable_ram;
 
     vga_init(fb_tag);
@@ -225,8 +231,10 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     pit_set_frequency(PIT_FREQUENCY);
 
     k_logln("Setting irq handlers.");
-    set_irq_handler(0, timer_handler);
+    set_irq_handler(0, pit_timer_handler);
     set_irq_handler(1, keyboard_handler);
+
+    set_idt_gate(APIC_TIMER_VECTOR, apic_timer_handler);
 
     flush_keyboard();
 

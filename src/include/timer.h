@@ -2,13 +2,8 @@
 #define TIMER_H
 
 #include <stdint.h>
-#include <drivers/io.h>
-#include <thread.h>
-#include <irq.h>
+#include <drivers/system.h>
 
-extern uint64_t timer_ticks;
-extern uint64_t ms_passed;
-
-void timer_handler(reg_t *r);
+uint64_t get_ticks();
 
 #endif

@@ -51,7 +51,7 @@ void run_badapple(char *argv[], int argc) {
         uint32_t frames = badapple_file->length / bytes_per_frame;
 
         for (uint32_t frame = 0; frame < frames; frame++) {
-            uint64_t start_ticks = timer_ticks;
+            uint64_t start_ticks = pit_ticks;
 
             for (uint32_t y = 0; y < badapple_height; y++) {
                 for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
@@ -70,7 +70,7 @@ void run_badapple(char *argv[], int argc) {
             flush_buffer();
 
             uint64_t ticks_per_frame = PIT_FREQUENCY / TARGET_FPS;
-            uint64_t ticks_taken = timer_ticks - start_ticks;
+            uint64_t ticks_taken = pit_ticks - start_ticks;
 
             if (ticks_taken > ticks_per_frame)
                 ticks_taken = ticks_per_frame;

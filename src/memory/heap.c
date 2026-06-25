@@ -1,17 +1,18 @@
 #include <memory/heap.h>
 #include <memory/liballoc/liballoc.h>
 #include <drivers/io.h>
+#include <logging.h>
 
 uint32_t _kernel_end;
 
 void heap_init(uint32_t kernel_end) {
     _kernel_end = kernel_end;
 
-    serial_print("Heap initalized at: ");
+    k_log("Heap initalized at: ");
 
     char buf[32];
     itoa(kernel_end, buf, 16);
-    serial_println(buf);
+    k_logln(buf);
 }
 
 void* liballoc_alloc(int pages) {

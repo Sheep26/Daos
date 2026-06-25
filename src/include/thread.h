@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <memory/liballoc/liballoc.h>
-#include <timer.h>
+#include <apic.h>
 #include <pit.h>
 
 #define STACK_SIZE 4096

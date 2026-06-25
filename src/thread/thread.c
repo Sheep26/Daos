@@ -7,6 +7,8 @@
 */
 
 #include <thread.h>
+#include <timer.h>
+#include <drivers/system.h>
 
 k_thread_t *thread_list = NULL;
 k_thread_t *current_thread = NULL;
@@ -145,14 +147,19 @@ void thread_wake(k_thread_t *thread) {
 }
 
 void thread_sleep(uint64_t ticks) {
-    current_thread->wake_tick = timer_ticks + ticks;
+    current_thread->wake_tick = get_ticks() + ticks;
     current_thread->state = BLOCKED;
 
     yield();
 }
 
 void thread_sleep_ms(uint64_t ms) {
-    uint64_t ticks = (ms * PIT_FREQUENCY) / 1000;
+    uint64_t ticks;
+
+    if (system->cpu->apic_enabled) 
+        ticks = apic_ticks_per_ms * ms;
+    else
+        ticks = (ms * PIT_FREQUENCY) / 1000;
 
     thread_sleep(ticks);
 }

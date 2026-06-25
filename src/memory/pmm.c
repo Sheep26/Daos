@@ -31,7 +31,7 @@ void pmm_init(multiboot_mmap_entry_t* mmap_entries, uint64_t max_addr, uint64_t 
     memset(pmm_bitmap, 0xFF, pmm_total_pages / 8);
 
     if (!pmm_bitmap) {
-        serial_print("PMM ERROR: Could not find space for bitmap!\n");
+        k_logln("PMM ERROR: Could not find space for bitmap!");
 
         return;
     }
@@ -51,13 +51,13 @@ void pmm_init(multiboot_mmap_entry_t* mmap_entries, uint64_t max_addr, uint64_t 
         }
     }
 
-    serial_println("Reserving kernel in memory.");
+    k_logln("Reserving kernel in memory.");
     pmm_reserve_region(0, kernal_end);
 
-    serial_println("Reserving bitmap in memory.");
+    k_logln("Reserving bitmap in memory.");
     pmm_reserve_region(pmm_bitmap_location, pmm_bitmap_size);
 
-    serial_print("PMM Initialized successfully.\n");
+    k_logln("PMM Initialized successfully.");
 }
 
 void* pmm_alloc_pages(size_t pages) {
@@ -83,7 +83,7 @@ void* pmm_alloc_pages(size_t pages) {
         } else
             contiguous = 0;
     
-    serial_print("PMM ERROR: Out of physical memory!\n");
+    k_logln("PMM ERROR: Out of physical memory!");
     return 0; // Out of memory
 }
 
@@ -108,15 +108,14 @@ void pmm_reserve_region(uint64_t start, uint64_t size) {
         }
     }
 
-    serial_print("Reserved memory region: ");
+    k_log("Reserved memory region: ");
     
     char start_buf[32];
     char end_buf[32];
     itoa(start, start_buf, 16);
     itoa(start + size, end_buf, 16);
 
-    serial_print(start_buf);
-    serial_print(" - ");
-    serial_print(end_buf);
-    serial_print("\n");
+    k_log(start_buf);
+    k_log(" - ");
+    k_logln(end_buf);
 }

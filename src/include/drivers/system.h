@@ -16,12 +16,15 @@ typedef struct {
 typedef struct cpu {
     char vendor[13];
     uint32_t max_leaf;
-    uint8_t apic;
+
+    uint8_t apic_supported;
+    uint8_t apic_enabled;
 } cpu_t;
 
-void get_cpu_vendor(cpu_t *cpu);
-void apic_supported(cpu_t *cpu);
+extern system_t *system;
+
 void cpu_init(cpu_t *cpu);
+void system_init();
 
 static inline uint64_t rdtsc() {
     uint32_t lo, hi;
