@@ -19,4 +19,5 @@ void apic_supported(cpu_t *cpu) {
 
 void cpu_init(cpu_t *cpu) {
     get_cpu_vendor(cpu);
+    apic_supported(cpu);
 }

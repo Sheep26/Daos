@@ -1,6 +1,7 @@
 #include <drivers/vga.h>
 #include <fs/vfs.h>
 #include <drivers/tty.h>
+#include <logging.h>
 
 vga_t vga;
 tty_t *tty;
@@ -118,29 +119,29 @@ void println_tty(const char *str) {
 }
 
 void vga_init(multiboot_tag_framebuffer_t* fb_tag) {
-	serial_println("Setting up VGA");
+	k_logln("Setting up VGA");
 
     char buf[32];
 
-    serial_print("VGA Width: ");
+    k_log("VGA Width: ");
     itoa(fb_tag->framebuffer_width, buf, 10);
-    serial_println(buf);
+    k_logln(buf);
 
-    serial_print("VGA Height: ");
+    k_log("VGA Height: ");
     itoa(fb_tag->framebuffer_height, buf, 10);
-    serial_println(buf);
+    k_logln(buf);
 
-    serial_print("VGA Pitch: ");
+    k_log("VGA Pitch: ");
     itoa(fb_tag->framebuffer_pitch, buf, 10);
-    serial_println(buf);
+    k_logln(buf);
 
-    serial_print("VGA BPP: ");
+    k_log("VGA BPP: ");
     itoa(fb_tag->framebuffer_bpp, buf, 10);
-    serial_println(buf);
+    k_logln(buf);
 
-    serial_print("VGA TYPE: ");
+    k_log("VGA TYPE: ");
     itoa(fb_tag->framebuffer_type, buf, 10);
-    serial_println(buf);
+    k_logln(buf);
 
 	vga.framebuffer_addr = fb_tag->framebuffer_addr;
 	vga.framebuffer = (uint32_t*) fb_tag->framebuffer_addr;
@@ -153,7 +154,7 @@ void vga_init(multiboot_tag_framebuffer_t* fb_tag) {
 	uint32_t *backbuffer = calloc(1, vga.framebuffer_height * vga.framebuffer_pitch);
 	vga.backbuffer = backbuffer;
 
-	serial_println("VGA setup complete");
+	k_logln("VGA setup complete");
 }
 
 uint32_t getpixel(int x, int y) {

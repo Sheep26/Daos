@@ -58,7 +58,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     serial_init();
-    serial_println("Setting up multiboot");
+    k_logln("Setting up multiboot");
 
     uint8_t* ptr = (uint8_t*) addr;
     uint32_t total_size = *(uint32_t*) ptr;
@@ -112,23 +112,24 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     if (!fb_tag) {
-        serial_println("ERROR: Framebuffer uninitalized");
+        k_logln("ERROR: Framebuffer uninitalized");
 
         while (1);
     }
 
-    k_log("Setup multiboot");
+    k_logln("Setup multiboot");
 
     // Init pmm and heap.
     pmm_init(mmap_entries, max_addr, mmap_entry_count, (uint32_t) &_kernel_end);
 
-    serial_println("Reserving framebuffer");
+    k_logln("Reserving framebuffer");
     pmm_reserve_region(fb_tag->framebuffer_addr, fb_tag->framebuffer_height * fb_tag->framebuffer_pitch);
 
-    serial_println("Initalising heap.");
+    k_logln("Initalising heap.");
     heap_init(pmm_bitmap_location + pmm_bitmap_size);
 
     system_t *system = (system_t*) calloc(1, sizeof(system_t));
+    system->cpu = (cpu_t*) calloc(1, sizeof(cpu_t));
     system->total_usable_ram = total_usable_ram;
 
     vga_init(fb_tag);

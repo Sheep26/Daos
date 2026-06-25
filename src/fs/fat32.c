@@ -1,4 +1,5 @@
 #include <fs/fat32.h>
+#include <logging.h>
 
 static void *memset16(uint16_t *buf, uint16_t val, size_t count) {
     for (size_t i = 0; i < count; i++)
@@ -201,12 +202,12 @@ int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     uint8_t sector[512];
 
     if (!read_sectors(0, 1, (uint16_t*) sector, ata)) {
-        serial_print("Drive: ATA");
+        k_log("Drive: ATA");
         char buf[32];
         itoa(fat32_disk->ata->identifier, buf, 10);
 
-        serial_println(buf);
-        serial_println("Failed to read boot sector");
+        k_logln(buf);
+        k_logln("Failed to read boot sector");
 
         return 0;
     }
@@ -214,12 +215,12 @@ int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     fat32_disk->bpb = malloc(sizeof(bpb_t));
 
     if (!fat32_disk->bpb) {
-        serial_print("Drive: ATA");
+        k_log("Drive: ATA");
         char buf[32];
         itoa(fat32_disk->ata->identifier, buf, 10);
 
-        serial_println(buf);
-        serial_println("Failed to allocate BPB");
+        k_logln(buf);
+        k_logln("Failed to allocate BPB");
 
         return 0;
     }
@@ -229,12 +230,12 @@ int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
 
     // Validate.
     if (fat32_disk->bpb->signature != 0xAA55) {
-        serial_print("Drive: ATA");
+        k_log("Drive: ATA");
         char buf[32];
         itoa(fat32_disk->ata->identifier, buf, 10);
 
-        serial_println(buf);
-        serial_println("Invalid FAT32 signature");
+        k_logln(buf);
+        k_logln("Invalid FAT32 signature");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
@@ -243,12 +244,12 @@ int fat_disk_init(fat32_disk_t *fat32_disk, ata_t *ata) {
     }
 
     if (fat32_disk->bpb->sectors_per_fat_32 == 0) {
-        serial_print("Drive: ATA");
+        k_log("Drive: ATA");
         char buf[32];
         itoa(fat32_disk->ata->identifier, buf, 10);
 
-        serial_println(buf);
-        serial_println("Not a FAT32 filesystem");
+        k_logln(buf);
+        k_logln("Not a FAT32 filesystem");
 
         free(fat32_disk->bpb);
         fat32_disk->bpb = NULL;
@@ -523,13 +524,13 @@ int fat_mkdir(fat32_disk_t *disk, uint32_t parent_cluster, char *name) {
 
 int fat_format(fat32_disk_t *fat32_disk, char *label) {
     if (sizeof(bpb_t) != 512) {
-        serial_println("BPB BAD SIZE");
+        k_logln("BPB BAD SIZE");
 
         return 0;
     }
 
     if (sizeof(fsinfo_t) != 512) {
-        serial_println("FSINFO BAD SIZE");
+        k_logln("FSINFO BAD SIZE");
 
         return 0;
     }
@@ -683,8 +684,8 @@ int fat_format(fat32_disk_t *fat32_disk, char *label) {
 
     fat_init(fat32_disk);
 
-    serial_print("Formatted disk: ");
-    serial_println(label);
+    k_log("Formatted disk: ");
+    k_logln(label);
 
     return 1;
 }
