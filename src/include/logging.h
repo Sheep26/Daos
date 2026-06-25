@@ -4,6 +4,6 @@
 #include <drivers/io.h>
 #include <drivers/vga.h>
 
-void log(char *s);
+void k_log(char *s);
 
 #endif

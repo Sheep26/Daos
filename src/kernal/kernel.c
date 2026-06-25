@@ -42,7 +42,8 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 }
 
 void main_thread() {
-    log("Entering main thread");
+    k_log("Entering main thread");
+
     clear_tty();
     reset_tty();
 
@@ -187,32 +188,32 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     fs_directory_t fs_dir;
     ls_fs("/", &fs_dir);
 
-    log("FS root");
+    k_log("FS root");
 
     for (int i = 0; i < fs_dir.count; i++)
-        log(fs_dir.nodes[i].name);
+        k_log(fs_dir.nodes[i].name);
 
-    log("Init idt");
+    k_log("Init idt");
     init_idt();
 
-    log("Init isr");
+    k_log("Init isr");
     init_isr();
 
-    log("PIC remap");
+    k_log("PIC remap");
     pic_remap();
 
-    log("Init irq");
+    k_log("Init irq");
     init_irq();
 
     flush_keyboard();
 
-    log("Enabling interrupts");
+    k_log("Enabling interrupts");
     enable_interrupts();
 
-    log("Setting PIC frequency");
+    k_log("Setting PIC frequency");
     pit_set_frequency(PIT_FREQUENCY);
 
-    log("Setting irq handlers.");
+    k_log("Setting irq handlers.");
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
 
@@ -224,12 +225,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("cd", "Change working directory", run_cd);
     create_command("hello", "Prints hello world", run_hello);
 
-    log("Creating idle thread");
+    k_log("Creating idle thread");
     create_idle_thread(idle_func);
 
-    log("Creating main thread");
+    k_log("Creating main thread");
     create_new_thread(main_thread);
 
-    log("Running schedular");
+    k_log("Running schedular");
     scheduler_run();
 }
