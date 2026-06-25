@@ -153,18 +153,18 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     int ata0_indenify = ata_identify(&ata0);
 
     if (!ata0_indenify) {
-        log("ERROR: Disk 0 not found");
+        k_log("ERROR: Disk 0 not found");
 
         return;
     }
 
     if (!fat_disk_init(&fat32_disk0, &ata0)) {
-        log("Formatting disk");
+        k_log("Formatting disk");
 
         fat_format(&fat32_disk0, "Disk");
 
         fillscreen(0x00000000);
-        log("Disk Formatted, please close the os.");
+        k_log("Disk Formatted, please close the os.");
 
         return;
     }

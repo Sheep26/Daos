@@ -91,7 +91,7 @@ k_thread_t *find_next() {
         return idle_thread;
 
     k_thread_t *start = current_thread;
-    k_thread_t *t = current_thread->next;
+    k_thread_t *t;
 
     do {
         t = t->next ? t->next : thread_list;
