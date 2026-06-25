@@ -5,7 +5,7 @@
 vga_t vga;
 tty_t *tty;
 
-void setup_tty(font_t font) {
+void tty_init(font_t font) {
 	tty = malloc(sizeof(tty));
 
 	tty->tty_width = WIDTH;
@@ -13,13 +13,14 @@ void setup_tty(font_t font) {
 	tty->tty_x = 0;
 	tty->tty_y = 0;
 	tty->font = font;
-	tty_init();
+	tty_reset();
 }
 
 void reset_tty() {
 	tty->tty_x = 0;
 	tty->tty_y = 0;
-	tty_init();
+
+	tty_reset();
 }
 
 void newline_tty() {
@@ -74,6 +75,15 @@ void clearln_tty(uint16_t ln) {
     flush_buffer();
 }
 
+void clear_tty() {
+	for (uint16_t ln = 0; ln < tty->tty_height; ln++)
+		for (uint16_t y = 0; y < tty->font.font_height; y++)
+			for (uint16_t x = 0; x < tty->tty_width * tty->font.font_width; x++)
+				putpixel(x, ln * tty->font.font_height + y, 0x00000000);
+
+	flush_buffer();
+}
+
 void scroll_tty(tty_t *tty) {
     int line_height = tty->font.font_height;
     int screen_width = tty->tty_width * tty->font.font_width;
@@ -107,7 +117,7 @@ void println_tty(const char *str) {
 	}
 }
 
-void setup_vga(multiboot_tag_framebuffer_t* fb_tag) {
+void vga_init(multiboot_tag_framebuffer_t* fb_tag) {
 	serial_println("Setting up VGA");
 
     char buf[32];

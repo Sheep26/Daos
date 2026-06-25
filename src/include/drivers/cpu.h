@@ -14,7 +14,7 @@ typedef struct {
 
 void get_cpu_vendor(cpu_t *cpu);
 void get_cpu_frequency_info(cpu_t *cpu);
-void init_cpu(cpu_t *cpu);
+void cpu_init(cpu_t *cpu);
 
 static inline uint64_t rdtsc() {
     uint32_t lo, hi;

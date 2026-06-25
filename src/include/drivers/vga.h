@@ -30,17 +30,18 @@ typedef struct {
 	uint32_t *backbuffer;
 } vga_t;
 
-void setup_tty(font_t font);
+void tty_init(font_t font);
 void reset_tty();
 
 void print_tty(const char *str);
 void clearln_tty(uint16_t ln);
+void clear_tty();
 void scroll_tty();
 void newline_tty();
 void println_tty(const char *str);
 void backspace_tty();
 
-void setup_vga(multiboot_tag_framebuffer_t* fb_tag);
+void vga_init(multiboot_tag_framebuffer_t* fb_tag);
 
 uint32_t getpixel(int x, int y);
 

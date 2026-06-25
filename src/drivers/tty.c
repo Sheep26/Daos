@@ -5,7 +5,7 @@
 
 char tty_input[TTY_BUF_SIZE] = {0};
 
-void tty_init() {
+void tty_reset() {
     memset(tty_input, '\0', sizeof(tty_input));
 }
 

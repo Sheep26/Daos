@@ -6,25 +6,27 @@ mkdir build
 mkdir build/isodir
 mkdir -p build/isodir/boot/grub
 
-for file in src/*.s; do
+shopt -s globstar
+
+for file in src/**/*.s; do
     name=$(basename "$file" .s)
 
     i686-elf-as -c "$file" -o "build/$name.o"
 done
 
-for file in src/*.S; do
+for file in src/**/*.S; do
     name=$(basename "$file" .S)
 
     i686-elf-gcc -c "$file" -o "build/$name.o" -ffreestanding -O2 -Wall -Wextra
 done
 
-for file in libc/*/*.c; do
+for file in libc/**/*.c; do
     name=$(basename "$file" .c)
 
     i686-elf-gcc -c "$file" -o "build/$name.o" -Isrc/include -Ilibc/include -std=gnu99 -ffreestanding -O2 -Wall -Wextra
 done
 
-for file in src/*/*.c; do
+for file in src/**/*.c; do
     name=$(basename "$file" .c)
 
     i686-elf-gcc -c "$file" -o "build/$name.o" -Isrc/include -Ilibc/include -std=gnu99 -ffreestanding -O2 -Wall -Wextra

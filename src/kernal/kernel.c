@@ -23,6 +23,7 @@
 #include <drivers/keyboard.h>
 #include <drivers/tty.h>
 #include <command_handler.h>
+#include <logging.h>
 
 cpu_t cpu;
 ata_t ata0;
@@ -41,7 +42,9 @@ void* find_module(multiboot_tag_module_t* mod, const char* name, uint32_t* out_s
 }
 
 void main_thread() {
-    serial_println("Entering main thread");
+    log("Entering main thread");
+    clear_tty();
+    reset_tty();
 
     print_tty(cwd);
     print_tty(" ");
@@ -57,7 +60,6 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     }
 
     serial_init();
-
     serial_println("Setting up multiboot");
 
     uint8_t* ptr = (uint8_t*) addr;
@@ -134,13 +136,13 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     serial_println("Initalising heap.");
     heap_init(pmm_bitmap_location + pmm_bitmap_size);
 
-    init_cpu(&cpu);
+    cpu_init(&cpu);
 
     serial_print("CPU Vendor: ");
     serial_println(cpu.vendor);
 
-    setup_vga(fb_tag);
-    setup_tty(font8x8_basic);
+    vga_init(fb_tag);
+    tty_init(font8x8_basic);
 
     vfs_init();
     //vfs_mount("/", ramfs_create());
@@ -150,23 +152,19 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     int ata0_indenify = ata_identify(&ata0);
 
     if (!ata0_indenify) {
-        draw_string("ERROR: Disk 0 not found", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
-        flush_buffer();
+        log("ERROR: Disk 0 not found");
 
         return;
     }
 
     if (!fat_disk_init(&fat32_disk0, &ata0)) {
-        draw_string("Formatting disk.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
-        flush_buffer();
+        log("Formatting disk");
 
         fat_format(&fat32_disk0, "Disk");
 
-        serial_println("Disk Formatted, please close the os.");
         fillscreen(0x00000000);
-        draw_string("Disk Formatted, please close the os.", 8, 8, 0x00FFFFFF, 0x00000000, font8x8_basic);
+        log("Disk Formatted, please close the os.");
 
-        flush_buffer();
         return;
     }
 
@@ -189,21 +187,32 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     fs_directory_t fs_dir;
     ls_fs("/", &fs_dir);
 
-    serial_println("FS root");
+    log("FS root");
 
     for (int i = 0; i < fs_dir.count; i++)
-        serial_println(fs_dir.nodes[i].name);
+        log(fs_dir.nodes[i].name);
 
+    log("Init idt");
     init_idt();
+
+    log("Init isr");
     init_isr();
 
+    log("PIC remap");
     pic_remap();
+
+    log("Init irq");
     init_irq();
 
     flush_keyboard();
+
+    log("Enabling interrupts");
     enable_interrupts();
+
+    log("Setting PIC frequency");
     pit_set_frequency(PIT_FREQUENCY);
 
+    log("Setting irq handlers.");
     set_irq_handler(0, timer_handler);
     set_irq_handler(1, keyboard_handler);
 
@@ -215,8 +224,12 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     create_command("cd", "Change working directory", run_cd);
     create_command("hello", "Prints hello world", run_hello);
 
+    log("Creating idle thread");
     create_idle_thread(idle_func);
+
+    log("Creating main thread");
     create_new_thread(main_thread);
 
+    log("Running schedular");
     scheduler_run();
 }

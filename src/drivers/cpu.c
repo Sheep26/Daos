@@ -22,6 +22,6 @@ void get_cpu_vendor(cpu_t *cpu) {
     cpu->vendor[12] = 0;
 }
 
-void init_cpu(cpu_t *cpu) {
+void cpu_init(cpu_t *cpu) {
     get_cpu_vendor(cpu);
 }
