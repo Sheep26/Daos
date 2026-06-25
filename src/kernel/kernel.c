@@ -46,6 +46,7 @@ void main_thread() {
 
     clear_tty();
     reset_tty();
+    log_tty = 0;
 
     print_tty(cwd);
     print_tty(" ");

@@ -7,6 +7,7 @@
 #include <irq.h>
 
 extern uint64_t timer_ticks;
+extern uint64_t ms_passed;
 
 void timer_handler(reg_t *r);
 

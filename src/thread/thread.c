@@ -151,6 +151,12 @@ void thread_sleep(uint64_t ticks) {
     yield();
 }
 
+void thread_sleep_ms(uint64_t ms) {
+    uint64_t ticks = (ms * PIT_FREQUENCY) / 1000;
+
+    thread_sleep(ticks);
+}
+
 void scheduler_add(k_thread_t *thread) {
     if (!thread_list) {
         thread_list = thread;

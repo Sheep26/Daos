@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <memory/liballoc/liballoc.h>
 #include <timer.h>
+#include <pit.h>
 
 #define STACK_SIZE 4096
 
@@ -46,6 +47,7 @@ void idle_func();
 void thread_block(k_thread_t *thread);
 void thread_wake(k_thread_t *thread);
 void thread_sleep(uint64_t ticks);
+void thread_sleep_ms(uint64_t ms);
 
 void yield();
 void yield_if_needed();
