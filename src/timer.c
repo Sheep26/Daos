@@ -11,7 +11,7 @@ uint64_t get_ticks() {
 
 uint64_t get_ms_passed() {
     if (system->cpu->apic_enabled)
-        return apic_ms_passed;
+        return apic_ticks;
     
     return pit_ms_passed;
 }

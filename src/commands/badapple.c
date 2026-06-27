@@ -50,7 +50,7 @@ void run_badapple(char *argv[], int argc) {
         uint32_t frames = badapple_file->length / bytes_per_frame;
 
         for (uint32_t frame = 0; frame < frames; frame++) {
-            uint64_t start_ticks = get_ticks();
+            uint64_t start_ms = get_ms_passed();
 
             for (uint32_t y = 0; y < badapple_height; y++) {
                 for (uint32_t byte = 0; byte < bytes_per_row; byte++) {
@@ -68,13 +68,12 @@ void run_badapple(char *argv[], int argc) {
 
             flush_buffer();
 
-            uint64_t ticks_per_frame = PIT_FREQUENCY / TARGET_FPS;
-            uint64_t ticks_taken = get_ticks() - start_ticks;
+            uint64_t time_taken = get_ms_passed() - start_ms;
 
-            if (ticks_taken > ticks_per_frame)
-                ticks_taken = ticks_per_frame;
+            if (time_taken > 1000/TARGET_FPS)
+                time_taken = 1000/TARGET_FPS;
 
-            thread_sleep(ticks_per_frame - ticks_taken);
+            thread_sleep_ms(1000/TARGET_FPS - time_taken);
         }
 
         reset_tty();

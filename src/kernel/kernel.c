@@ -27,6 +27,8 @@
 #include <apic.h>
 #include <drivers/system.h>
 
+extern void apic_stub();
+
 extern uint32_t _kernel_start;
 extern uint32_t _kernel_end;
 
@@ -43,10 +45,9 @@ void main_thread() {
     k_logln("Entering main thread");
 
     if (system->cpu->apic_supported) {
-        // APIC is so borked.
-
-        //k_logln("APIC available, enabling APIC.");
-        //apic_enable();
+        k_logln("APIC available, enabling APIC.");
+        
+        apic_enable();
     }
 
     clear_tty();
@@ -236,7 +237,7 @@ void kernel_main(uint32_t magic, uint32_t addr) {
     set_irq_handler(0, pit_timer_handler);
     set_irq_handler(1, keyboard_handler);
 
-    set_idt_gate(APIC_TIMER_VECTOR, apic_timer_handler);
+    set_idt_gate(APIC_TIMER_VECTOR, apic_stub);
 
     flush_keyboard();
 

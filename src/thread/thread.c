@@ -157,7 +157,7 @@ void thread_sleep_ms(uint64_t ms) {
     uint64_t ticks;
 
     if (system->cpu->apic_enabled) 
-        ticks = apic_ticks_per_ms * ms;
+        ticks = ms;
     else
         ticks = (ms * PIT_FREQUENCY) / 1000;
 

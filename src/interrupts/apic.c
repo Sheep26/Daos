@@ -4,48 +4,40 @@
 #include <drivers/system.h>
 
 uint64_t apic_ticks;
-uint64_t apic_ms_passed;
 uint64_t apic_ticks_per_ms;
 
 void apic_enable() {
-    uint32_t eax, edx;
-    uint32_t msr_low, msr_high;
-
-    __asm__ volatile ("rdmsr" : "=a"(msr_low), "=d"(msr_high) : "c"(0x1B));
-    msr_low |= (1 << 11);
-    __asm__ volatile ("wrmsr" : : "a"(msr_low), "d"(msr_high), "c"(0x1B));
-
-    LAPIC_REG(LAPIC_TMRINIT) = 0;
-    LAPIC_REG(LAPIC_DIV) = 0x3; // divide by 16
-    LAPIC_REG(LAPIC_LVT_TMR) = APIC_TIMER_VECTOR | (0 << 16) | (1 << 17);
-
+    LAPIC_REG(LAPIC_DIV) = 0x3;
     LAPIC_REG(LAPIC_TMRINIT) = 0xFFFFFFFF;
+    LAPIC_REG(LAPIC_SVR) = 0x100 | 0xFF; // enable + spurious vector
 
-    uint64_t start = pit_ms_passed;
+    // Perform PIT-supported sleep
+    thread_sleep_ms(1);
 
-    while (pit_ms_passed - start < 100)
-        __asm__ volatile ("pause");
+    // Stop the APIC timer
+    LAPIC_REG(LAPIC_LVT_TMR) = 0;
 
-    uint64_t ticks = LAPIC_REG(LAPIC_TMRCURR);
-    uint64_t delta = 0xFFFFFFFF - ticks;
+    // Now we know how often the APIC timer has ticked in 10ms
+    apic_ticks_per_ms = 0xFFFFFFFF - LAPIC_REG(LAPIC_TMRCURR);
 
-    apic_ticks_per_ms = delta / 100;
+    // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
+    LAPIC_REG(LAPIC_LVT_TMR) = APIC_TIMER_VECTOR | (1 << 17);
+    LAPIC_REG(LAPIC_DIV) = 0x3;
+    LAPIC_REG(LAPIC_TMRINIT) = apic_ticks_per_ms;
 
-    k_log("APIC Ticks per ms");
+    outb(0x21, 0x01);
+    outb(0xA1, 0x00);
+
+    system->cpu->apic_enabled = 1;
 
     char buf[32];
-    itoa(apic_ticks_per_ms, buf, 16);
+    itoa(apic_ticks_per_ms, buf, 10);
+    k_log("APIC ticks per ms: ");
     k_logln(buf);
-
-    LAPIC_REG(LAPIC_TMRINIT) = apic_ticks_per_ms; // How many times we tick before firing an interrupt.
-
-    outb(0x21, 0xFF);
-    outb(0xA1, 0xFF);
 }
 
 void apic_timer_handler() {
     apic_ticks++;
-    apic_ms_passed = apic_ticks / apic_ticks_per_ms;
 
     schedular_tick();
     LAPIC_REG(LAPIC_EOI) = 0;

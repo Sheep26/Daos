@@ -41,6 +41,41 @@ void (*isr_name[32])() = {
     isr31
 };
 
+char *exception_messages[] = {
+	"Division by zero",				/* 0 */
+	"Debug",
+	"Non-maskable interrupt",
+	"Breakpoint",
+	"Detected overflow",
+	"Out-of-bounds",				/* 5 */
+	"Invalid opcode",
+	"No coprocessor",
+	"Double fault",
+	"Coprocessor segment overrun",
+	"Bad TSS",						/* 10 */
+	"Segment not present",
+	"Stack fault",
+	"General protection fault",
+	"Page fault",
+	"Unknown interrupt",			/* 15 */
+	"Coprocessor fault",
+	"Alignment check",
+	"Machine check",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved",
+	"Reserved"
+};
+
 void init_isr() {
     for (int i = 0; i < 32; i++)
         set_idt_gate(i, (uint32_t) isr_name[i]);
@@ -48,8 +83,10 @@ void init_isr() {
 
 void isr_handler(reg_t *r) {
     if(r->isr_no < 32) {
-        serial_println("ISR ERROR");
+        k_log("ERROR: ");
+        k_logln(exception_messages[r->isr_no]);
 
-        while(1);
+        while(1)
+            __asm__ volatile ("hlt");
     }
 }

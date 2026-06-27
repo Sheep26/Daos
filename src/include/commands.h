@@ -6,7 +6,7 @@
 #include <font.h>
 #include <drivers/io.h>
 
-#define TARGET_FPS 24 // Double speed.
+#define TARGET_FPS 30
 
 void run_badapple(char *argv[], int argc);
 void run_help(char *argv[], int argc);

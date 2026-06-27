@@ -40,6 +40,10 @@ static inline void enable_interrupts() {
     __asm__ volatile ("sti");
 }
 
+static inline void disable_interrupts() {
+    __asm__ volatile ("cli");
+}
+
 static inline void io_wait(void){
     outb(0x80, 0);
 }
