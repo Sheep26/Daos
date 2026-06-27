@@ -180,9 +180,6 @@ void scheduler_add(k_thread_t *thread) {
 }
 
 void schedular_tick() {
-    if (get_ticks() % 4 == 0)
-        reschedule_needed = 1;
-
     k_thread_t *t = thread_list;
 
     while (t) {
