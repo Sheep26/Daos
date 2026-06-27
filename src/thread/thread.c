@@ -3,7 +3,6 @@
  * It will pick a thread and only leave it if it sleeps or finishes.
  * It won't switch between waiting threads to handle multitasking.
  * But it allows me to sleep the main thread so it is what it is.
- * It also won't free up finished threads.
 */
 
 #include <thread.h>
@@ -30,19 +29,13 @@ void thread_bootstrap() {
     fn();
 
     current_thread->state = FINISHED;
+
+    // Free pointers.
+    free(current_thread->stack);
+    free(current_thread);
     yield();
 
     while (1);
-}
-
-void start_thread(k_thread_t *thread) {
-    if (thread && thread->function) {
-        thread->state = ACTIVE;
-
-        ((func_t) thread->function)();
-
-        thread->state = FINISHED;
-    }
 }
 
 void thread_init_stack(k_thread_t *thread) {
