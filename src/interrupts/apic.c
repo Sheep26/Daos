@@ -9,18 +9,14 @@ uint64_t apic_ticks_per_ms;
 void apic_enable() {
     LAPIC_REG(LAPIC_DIV) = 0x3;
     LAPIC_REG(LAPIC_TMRINIT) = 0xFFFFFFFF;
-    LAPIC_REG(LAPIC_SVR) = 0x100 | 0xFF; // enable + spurious vector
+    LAPIC_REG(LAPIC_SVR) = 0x100 | 0xFF;
 
-    // Perform PIT-supported sleep
     thread_sleep_ms(1);
 
-    // Stop the APIC timer
     LAPIC_REG(LAPIC_LVT_TMR) = 0;
 
-    // Now we know how often the APIC timer has ticked in 10ms
     apic_ticks_per_ms = 0xFFFFFFFF - LAPIC_REG(LAPIC_TMRCURR);
 
-    // Start timer as periodic on IRQ 0, divider 16, with the number of ticks we counted
     LAPIC_REG(LAPIC_LVT_TMR) = APIC_TIMER_VECTOR | (1 << 17);
     LAPIC_REG(LAPIC_DIV) = 0x3;
     LAPIC_REG(LAPIC_TMRINIT) = apic_ticks_per_ms;
