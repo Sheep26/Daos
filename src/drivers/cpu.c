@@ -1,13 +1,6 @@
 #include <drivers/system.h>
 #include <string.h>
 
-void apic_supported(cpu_t *cpu) {
-    uint32_t eax, ebx, ecx, edx;
-
-    __cpuid(0x1, eax, ebx, ecx, edx);
-    cpu->apic_supported = (edx & (1 << 9)) != 0;
-}
-
 void cpu_init(cpu_t *cpu) {
     uint32_t eax, ebx, ecx, edx;
     __cpuid(0x00, eax, ebx, ecx, edx);
